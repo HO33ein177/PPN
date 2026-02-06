@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>نرم‌افزار انتخاب الکتروپمپ - پمپ پارس ناصری</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background: #e3f0ff;
+      direction: rtl;
+      text-align: center;
+      /* --- MOBILE SCROLL FIX START --- */
+      min-height: 100vh;
+      height: auto; /* Changed from 100vh to allow growth */
+      overflow-x: hidden;
+      overflow-y: auto; /* Ensure vertical scrolling is allowed */
+      -webkit-overflow-scrolling: touch;
+      /* --- MOBILE SCROLL FIX END --- */
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Vazirmatn', sans-serif;
+    }
+
+    /* Header */
+    .app-header {
+      background: #fff;
+      padding: 12px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      position: relative;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .logo-link {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .logo-link img {
+      height: 55px;
+      filter: drop-shadow(0 0 3px rgba(0,0,0,0.1));
+    }
+
+    .logo-link h1 {
+      color: #1c4e80;
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .app-header nav a {
+      color: #555;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .app-header nav a:hover {
+      color: #1c4e80;
+    }
+
+    /* Main Content Area */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      width: 100%;
+      box-sizing: border-box;
+      /* --- MOBILE SCROLL FIX --- */
+      min-height: 0;
+    }
+
+    .content-box {
+      background: #fff;
+      padding: 40px 50px;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(28, 78, 128, 0.1);
+      max-width: 900px;
+      width: 100%;
+      /* --- MOBILE SCROLL FIX --- */
+      max-height: none; /* Changed from 100% to allow content to push footer down */
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    /* Typography */
+    .center-content h1 {
+      font-size: 2.2rem;
+      color: #1c4e80;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+    }
+    .center-content p.subtitle {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+
+    /* Option Cards Styles */
+    .option-card {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent !important;
+      background: #f8fbff;
+    }
+    .option-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+      background: #fff;
+      border-color: #bbdefb !important;
+    }
+    .option-card .icon-box {
+      font-size: 3.5rem;
+      margin-bottom: 15px;
+    }
+
+    /* Footer */
+    footer {
+      background: #1c4e80;
+      color: rgba(255,255,255,0.9);
+      padding: 15px;
+      text-align: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      margin-top: auto; /* Push to bottom of content */
+    }
+
+    /* Splash & Transition */
+    #splash {
+      position: fixed; inset: 0; background: radial-gradient(circle at center, #0a3d62 0%, #134f86 100%);
+      display: flex; justify-content: center; align-items: center; z-index: 9999;
+      opacity: 1; transition: opacity 0.9s ease;
+    }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+    #splash img { width: min(55vw, 700px); height: auto; position: relative; animation: glowLogo 2.2s ease-out forwards; }
+    @keyframes glowLogo {
+      0%   { transform: scale(0.85); opacity: 0; filter: drop-shadow(0 0 0px rgba(255,255,255,0)); }
+      40%  { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 48px rgba(255,255,255,0.6)); }
+      70%  { transform: scale(0.99); filter: drop-shadow(0 0 32px rgba(255,255,255,0.4)); }
+      100% { transform: scale(1); filter: drop-shadow(0 0 24px rgba(255,255,255,0.3)); }
+    }
+    #transition-overlay {
+      position: fixed; inset: 0; background: #e3f0ff; z-index: 9998;
+      display: flex; justify-content: center; align-items: center;
+      opacity: 0; pointer-events: none; transition: all 1.2s ease;
+    }
+    #transition-overlay.active { opacity: 1; }
+    #transition-overlay img { width: 180px; height: 180px; transition: transform 1.2s ease, opacity 1.2s ease; }
+    #transition-overlay.active img { transform: scale(20); opacity: 0; }
+
+    @media (max-width: 768px) {
+      body { overflow-y: auto; } /* Force scroll for mobile */
+      main { align-items: flex-start; } /* Allow content to start at top */
+      .app-header { flex-direction: column; gap: 10px; padding: 15px; }
+      .content-box { padding: 30px 20px; margin-top: 10px; }
+      .logo-link h1 { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <img src="/static/tran_logo.png" alt="لوگو">
+  </div>
+
+  <div id="transition-overlay">
+    <img src="/static/drop.png" alt="قطره">
+  </div>
+
+  <header class="app-header">
+    <div class="logo-container">
+      <a href="/" class="logo-link">
+        <img src="/static/logo.png" alt="لوگو">
+        <h1>نرم‌افزار انتخاب الکتروپمپ</h1>
+      </a>
+    </div>
+    <nav>
+      <a href="https://parsnasseripump.ir/about-us">معرفی مجموعه</a>
+      <a href="/guide">راهنمای استفاده</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="content-box">
+      <div class="center-content">
+        <h1>روش طراحی را انتخاب کنید</h1>
+        <p class="subtitle">برای شروع یکی از دو روش زیر را انتخاب نمایید:</p>
+
+        <div class="row justify-content-center g-4 mt-3">
+
+          <div class="col-md-5">
+            <div class="card h-100 shadow-sm option-card" onclick="selectMethod('advanced')">
+              <div class="card-body p-4 d-flex flex-column">
+                <div class="icon-box text-primary">
+                  <i class="bi bi-gear-wide-connected"></i>
+                </div>
+                <h3 class="fw-bold text-primary">طراحی پیشرفته</h3>
+                <p class="text-muted mt-3 mb-4" style="line-height: 1.6;">
+                  محاسبه دقیق هد و دبی با دریافت مشخصات چاه و خط لوله.
+                  <br>
+                  <small class="text-secondary">(شامل محاسبه افت فشار)</small>
+                </p>
+                <button class="btn btn-outline-primary w-100 rounded-pill mt-auto">شروع پیشرفته</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-5">
+            <div class="card h-100 shadow-sm option-card" onclick="selectMethod('simple')">
+              <div class="card-body p-4 d-flex flex-column">
+                <div class="icon-box text-success">
+                  <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+                <h3 class="fw-bold text-success">طراحی ساده</h3>
+                <p class="text-muted mt-3 mb-4" style="line-height: 1.6;">
+                  ورود مستقیم مقادیر <strong>دبی (Q)</strong> و <strong>هد (H)</strong>.
+                  <br>
+                  <small class="text-secondary">(بدون نیاز به جزئیات خط لوله)</small>
+                </p>
+                <button class="btn btn-outline-success w-100 rounded-pill mt-auto">شروع ساده</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    کلیه حقوق مادی و معنوی این وبسایت متعلق به شرکت پمپ پارس ناصری© میباشد | 2025
+  </footer>
+
+  <script>
+    window.addEventListener("load", () => {
+      setTimeout(() => document.getElementById("splash").classList.add("hidden"), 2500);
+    });
+
+    function selectMethod(type) {
+      const overlay = document.getElementById("transition-overlay");
+      overlay.classList.add("active");
+
+      setTimeout(() => {
+        if (type === 'advanced') {
+          window.location.href = "/init_advanced";
+        }
+        if (type === 'simple'){
+          window.location.href = "/init_simple";
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

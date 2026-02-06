@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}معرفی مجموعه - پمپ پارس ناصری{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <div class="bg-white p-5 rounded-4 shadow-sm mx-auto" style="max-width: 800px;">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="لوگو" height="80" class="mb-4">
+    
+    <h2 class="fw-bold text-primary mb-4">درباره پمپ پارس ناصری</h2>
+    
+    <p class="lead text-muted mb-4">
+      پیشرو در صنعت تولید و عرضه انواع الکتروپمپ‌های شناور و تجهیزات آبرسانی با بیش از دو دهه تجربه درخشان.
+    </p>
+    
+    <div class="text-end" style="line-height: 1.8;">
+      <p>
+        مجموعه پمپ پارس ناصری با هدف ارتقای سطح کیفی صنعت آبرسانی کشور تاسیس گردید. ما با بهره‌گیری از دانش روز مهندسی و کادر فنی مجرب، تلاش می‌کنیم تا بهترین و کارآمدترین راه‌حل‌ها را برای چاه‌های عمیق و نیمه‌عمیق ارائه دهیم.
+      </p>
+      <p>
+        نرم‌افزار حاضر حاصل تلاش تیم تحقیق و توسعه ما برای تسهیل فرآیند پیچیده انتخاب پمپ است تا مشتریان عزیز بتوانند با اطمینان کامل و بدون نیاز به دانش فنی پیچیده، محصول مناسب خود را انتخاب نمایند.
+      </p>
+    </div>
+    
+    <hr class="my-4">
+    
+    <div class="row g-4 mt-2">
+      <div class="col-md-4">
+        <div class="p-3 border rounded bg-light">
+          <i class="bi bi-geo-alt fs-2 text-primary"></i>
+          <h6 class="mt-2 fw-bold">آدرس دفتر مرکزی</h6>
+          <small class="text-muted">تهران، خیابان سعدی جنوبی، ...</small>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 border rounded bg-light">
+          <i class="bi bi-telephone fs-2 text-primary"></i>
+          <h6 class="mt-2 fw-bold">تلفن تماس</h6>
+          <small class="text-muted" dir="ltr">021 - 12345678</small>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 border rounded bg-light">
+          <i class="bi bi-envelope fs-2 text-primary"></i>
+          <h6 class="mt-2 fw-bold">ایمیل</h6>
+          <small class="text-muted">info@parsnaseri.com</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-5">
+      <a href="{{ url_for('welcome') }}" class="btn btn-outline-primary">بازگشت به صفحه اصلی</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

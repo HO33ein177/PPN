@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container py-5">
+    <h3 class="text-center mb-4">پمپ‌های پیشنهادی برای Q={{q}} و H={{h}}</h3>
+
+    <div class="row">
+        {% for pump in pumps %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-{{ 'success' if loop.first else 'secondary' }}">
+                <div class="card-header fw-bold text-center">
+                    {{ pump.name }}
+                </div>
+                <div class="card-body text-end">
+                    <p><strong>راندمان در این نقطه:</strong> {{ pump.efficiency_at_q }}%</p>
+                    <p><strong>هد تولیدی:</strong> {{ pump.head_at_q }} متر</p>
+                    <p><strong>توان موتور:</strong> {{ pump.power }} kW</p>
+                    <hr>
+                    <p class="small text-muted">وزن: {{ pump.weight }}kg | طول: {{ pump.length }}mm</p>
+                </div>
+                <div class="card-footer text-center">
+                    <button class="btn btn-outline-primary btn-sm">مشاهده کاتالوگ</button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning text-center">متأسفانه پمپی با مشخصات وارد شده یافت نشد.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

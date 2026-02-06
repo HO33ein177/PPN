@@ -1,0 +1,351 @@
+{% extends "layout.html" %}
+
+{% block title %}مرحله ۱ - مشخصات چاه{% endblock %}
+
+{% block head_css %}
+  <style>
+    /* --- Layout & Form Styles --- */
+    .content-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin: 40px 0;
+      padding: 0 20px;
+    }
+
+    .form-section {
+      flex: 1;
+      min-width: 320px;
+      max-width: 450px;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      text-align: right;
+    }
+
+    /* --- Diagram Styles --- */
+    .diagram-box {
+      flex: 1.2;
+      min-width: 320px;
+      max-width: 500px;
+      background: #fff;
+      padding: 0;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: center;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      max-height: 550px;
+      display: block;
+    }
+
+    /* Animated Elements Transitions */
+    #svg-water, #svg-casing, #svg-void, #svg-cap {
+      transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    #svg-pump-group {
+      transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    #svg-static-group, #svg-dynamic-group {
+      transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* SVG Text Styles */
+    .svg-label {
+      font-family: 'Vazirmatn', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(255,255,255,1);
+      cursor: default;
+    }
+    .level-text { font-size: 14px; font-weight: 800; }
+    .level-line { stroke-width: 2; stroke-dasharray: 6, 4; }
+
+    /* Form Specifics */
+    label {
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #1c4e80;
+      display: block;
+    }
+
+    .var-symbol {
+      color: #666;
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: normal;
+      font-size: 1.1em;
+      margin-right: 5px;
+    }
+
+    .input-group { direction: ltr; }
+    .form-control { text-align: left; font-weight: 600; }
+
+    .unit-label {
+      background-color: #f8f9fa;
+      color: #555;
+      font-weight: bold;
+      min-width: 45px;
+      text-align: center;
+    }
+
+    .btn-next { width: 100%; padding: 12px; margin-top: 20px; font-weight: bold; }
+  </style>
+{% endblock %}
+
+{% block progress_bar %}
+  <div class="progress-bar-custom">
+    <div class="step-block active">
+      <div class="circle"><span class="step-number">1</span></div>
+      <div class="label">مشخصات چاه</div>
+    </div>
+    <div class="line"></div>
+    <div class="step-block">
+      <div class="circle"><span class="step-number">2</span></div>
+      <div class="label">مشخصات خط لوله</div>
+    </div>
+    <div class="line"></div>
+    <div class="step-block">
+      <div class="circle"><span class="step-number">3</span></div>
+      <div class="label">نقطه کار سیستم</div>
+    </div>
+    <div class="line"></div>
+    <div class="step-block">
+      <div class="circle"><span class="step-number">4</span></div>
+      <div class="label">انتخاب پمپ</div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <div class="form-section">
+    <h3 class="text-center mb-4" style="color: #1c4e80;">ورود اطلاعات چاه</h3>
+    <form action="{{ url_for('step1') }}" method="post">
+
+      <div class="mb-3">
+        <label>دبی مورد نیاز <span class="var-symbol">(Q<sub>r</sub>)</span></label>
+        <div class="input-group">
+          <select class="form-select bg-light fw-bold" name="flow_unit" style="max-width: 90px; color: #555;">
+            <option value="m3h">m³/h</option>
+            <option value="lit_sec">Lit/s</option>
+          </select>
+          <input type="number" class="form-control" name="flow" required step="0.1" value="{{ flow or '' }}" placeholder="">
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label>سطح استاتیک <span class="var-symbol">(H<sub>s</sub>)</span></label>
+          <div class="input-group">
+            <span class="input-group-text unit-label">m</span>
+            <input type="number" class="form-control" id="static_level" name="static_level"
+                   required step="0.5" value="{{ static_level or '' }}" oninput="drawWell()">
+          </div>
+        </div>
+
+        <div class="col-6">
+          <label>سطح دینامیک <span class="var-symbol">(H<sub>d</sub>)</span></label>
+          <div class="input-group">
+            <span class="input-group-text unit-label">m</span>
+            <input type="number" class="form-control" id="dynamic_level" name="dynamic_level"
+                   required step="0.5" value="{{ dynamic_level or ''  }}" oninput="drawWell()">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label>عمق نصب پمپ <span class="var-symbol">(D<sub>i</sub>)</span></label>
+        <div class="input-group">
+          <span class="input-group-text unit-label">m</span>
+          <input type="number" class="form-control" id="install_depth" name="install_depth"
+                 required step="0.5" value="{{ install_depth   }}" oninput="drawWell()">
+        </div>
+        <div class="form-text text-muted small">محل قرارگیری پمپ نسبت به دهانه چاه</div>
+      </div>
+
+      <div class="mb-3">
+        <label>قطر دهانه چاه <span class="var-symbol">(D<sub>well</sub>)</span></label>
+        <div class="input-group">
+          <span class="input-group-text bg-light fw-bold" style="min-width: 70px; color: #333;">Inch</span>
+          <input type="hidden" id="diameter_unit" name="diameter_unit" value="inch">
+          <input type="number" class="form-control" id="diameter" name="diameter" required step="0.1" value="{{ diameter or '' }}" oninput="drawWell()">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-next">تأیید و ادامه</button>
+    </form>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 300 600" id="well-diagram" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="groundGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#d7ccc8;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#a1887f;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#4fc3f7;stop-opacity:0.6" />
+          <stop offset="100%" style="stop-color:#0288d1;stop-opacity:0.8" />
+        </linearGradient>
+        <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#cfd8dc;stop-opacity:1" />
+          <stop offset="20%" style="stop-color:#eceff1;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#b0bec5;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#78909c;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="casingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#666;stop-opacity:1" />
+          <stop offset="10%" style="stop-color:#eee;stop-opacity:1" />
+          <stop offset="90%" style="stop-color:#eee;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#666;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+
+      <rect x="0" y="50" width="300" height="550" fill="url(#groundGrad)" />
+      <line x1="0" y1="50" x2="300" y2="50" stroke="#5d4037" stroke-width="6" />
+
+      <rect id="svg-casing" x="100" y="50" width="100" height="550" fill="url(#casingGrad)" stroke="#555" stroke-width="1"/>
+      <rect id="svg-void" x="105" y="50" width="90" height="550" fill="#263238" />
+
+      <rect id="svg-water" x="105" y="200" width="90" height="400" fill="url(#waterGrad)" />
+
+      <g id="svg-pump-group" transform="translate(0, 50)">
+        <rect id="svg-pipe" x="145" y="-600" width="10" height="600" fill="url(#steelGrad)" stroke="#455a64" stroke-width="1" />
+
+        <line x1="156" y1="-600" x2="156" y2="10" stroke="#212121" stroke-width="2" />
+
+        <g id="svg-pump-body">
+           <path d="M140,0 L160,0 L155,15 L145,15 Z" fill="#546e7a" />
+           <rect x="135" y="15" width="30" height="50" rx="2" fill="url(#steelGrad)" stroke="#455a64" />
+           <line x1="135" y1="25" x2="165" y2="25" stroke="#90a4ae" stroke-width="1" />
+           <line x1="135" y1="35" x2="165" y2="35" stroke="#90a4ae" stroke-width="1" />
+           <line x1="135" y1="45" x2="165" y2="45" stroke="#90a4ae" stroke-width="1" />
+           <rect x="138" y="65" width="24" height="20" fill="#263238" />
+           <path d="M138,68 L162,68 M138,72 L162,72 M138,76 L162,76 M138,80 L162,80" stroke="#78909c" stroke-width="1" />
+           <rect x="135" y="85" width="30" height="60" rx="3" fill="#37474f" stroke="#263238" />
+           <text x="180" y="50" class="svg-label" fill="#455a64">Pump</text>
+        </g>
+      </g>
+
+      <rect id="svg-cap" x="90" y="40" width="120" height="10" rx="2" fill="#5d4037" />
+      <rect x="140" y="30" width="20" height="20" fill="#78909c" />
+
+      <g id="svg-static-group">
+        <line x1="0" y1="0" x2="300" y2="0" stroke="#0d6efd" class="level-line" />
+        <text x="10" y="-8" class="svg-label level-text" fill="#0d6efd" text-anchor="start">سطح استاتیک</text>
+        <polygon points="120,0 115,-6 125,-6" fill="#0d6efd" />
+      </g>
+
+      <g id="svg-dynamic-group">
+        <line x1="0" y1="0" x2="300" y2="0" stroke="#dc3545" class="level-line" />
+        <text x="290" y="-8" class="svg-label level-text" fill="#dc3545" text-anchor="end">سطح دینامیک</text>
+        <polygon points="180,0 175,-6 185,-6" fill="#dc3545" />
+      </g>
+
+    </svg>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Setup Animation Constants
+  const SVG_GROUND_Y = 50;
+  const SVG_MAX_Y = 580;
+  const SVG_HEIGHT_AVAIL = SVG_MAX_Y - SVG_GROUND_Y;
+  const SVG_CENTER_X = 150;
+
+  function drawWell() {
+    // 1. Get Vertical Inputs
+    const staticM = parseFloat(document.getElementById('static_level').value) || 0;
+    const dynamicM = parseFloat(document.getElementById('dynamic_level').value) || 0;
+    const installM = parseFloat(document.getElementById('install_depth').value) || 0;
+
+    // 2. Vertical Scaling
+    let maxDepthM = Math.max(installM, dynamicM, staticM);
+    if (maxDepthM < 20) maxDepthM = 50;
+    maxDepthM = maxDepthM * 1.3;
+    const pxPerMeter = SVG_HEIGHT_AVAIL / maxDepthM;
+
+    // 3. Update Vertical Positions
+    const staticY = SVG_GROUND_Y + (staticM * pxPerMeter);
+    const dynamicY = SVG_GROUND_Y + (dynamicM * pxPerMeter);
+    const pumpY = SVG_GROUND_Y + (installM * pxPerMeter);
+
+    document.getElementById('svg-pump-group').setAttribute('transform', `translate(0, ${pumpY})`);
+
+    const waterRect = document.getElementById('svg-water');
+    waterRect.setAttribute('y', dynamicY);
+    let waterH = 600 - dynamicY;
+    if (waterH < 0) waterH = 0;
+    waterRect.setAttribute('height', waterH);
+
+    document.getElementById('svg-static-group').setAttribute('transform', `translate(0, ${staticY})`);
+    document.getElementById('svg-dynamic-group').setAttribute('transform', `translate(0, ${dynamicY})`);
+
+    // 4. DIAMETER (WIDTH) SCALING
+    const diameterInput = parseFloat(document.getElementById('diameter').value) || 0;
+    let diaMM = 0;
+    if (diameterInput > 0) {
+      diaMM = diameterInput * 25.4;
+    }
+
+    let visualWidth = 100;
+    if (diaMM > 0) {
+      visualWidth = (diaMM / 300) * 100;
+    }
+
+    if (visualWidth < 60) visualWidth = 60;
+    if (visualWidth > 200) visualWidth = 200;
+
+    const newX = SVG_CENTER_X - (visualWidth / 2);
+
+    const casing = document.getElementById('svg-casing');
+    casing.setAttribute('x', newX);
+    casing.setAttribute('width', visualWidth);
+
+    const voidRect = document.getElementById('svg-void');
+    voidRect.setAttribute('x', newX + 5);
+    voidRect.setAttribute('width', visualWidth - 10);
+
+    waterRect.setAttribute('x', newX + 5);
+    waterRect.setAttribute('width', visualWidth - 10);
+
+    const cap = document.getElementById('svg-cap');
+    cap.setAttribute('x', newX - 10);
+    cap.setAttribute('width', visualWidth + 20);
+  }
+
+  window.addEventListener('load', drawWell);
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+      const dyn = parseFloat(document.getElementById('dynamic_level').value);
+      const stat = parseFloat(document.getElementById('static_level').value);
+      const inst = parseFloat(document.getElementById('install_depth').value);
+
+      // ERROR 1: Static Level cannot be deeper than Dynamic Level
+      if (dyn < stat) {
+          alert('توجه: سطح استاتیک نمی‌تواند بیشتر از سطح دینامیک باشد.');
+          e.preventDefault(); // Stop submission
+          return; // Stop the function here so we don't show the next alert
+      }
+
+      // ERROR 2: Pump Installation Depth must be deeper than Dynamic Level
+      else if (inst < dyn) {
+          alert('هشدار: عمق نصب الکتروپمپ باید بیشتر از سطح دینامیک باشد');
+          e.preventDefault(); // Stop submission
+      }
+  });
+</script>
+{% endblock %}

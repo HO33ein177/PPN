@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}نرم‌افزار انتخاب الکتروپمپ{% endblock %}</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* Global styles for all pages */
+    body {
+      background: #e3f0ff;
+      direction: rtl;
+      text-align: center;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Vazirmatn', sans-serif;
+    }
+    main { flex: 1; }
+
+    /* Header (from welcome.html) */
+    header {
+      background: #fff;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    header img {
+      height: 60px;
+      margin-left: 15px; /* Adds space between logo and text (RTL) */
+      filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
+    }
+    header h1 {
+      color: #1c4e80;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    /* Footer (from welcome.html) */
+    footer {
+      background: #2f618c;
+      color: #fff;
+      padding: 15px;
+      margin-top: auto;
+      text-align: center;
+    }
+
+    /* Shared Progress Bar Styles */
+    .progress-bar-custom {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      margin: 40px auto;
+      flex-wrap: wrap;
+    }
+    .step-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 140px;
+    }
+    .circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #fff;
+    }
+    .label {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #666;
+    }
+    .line {
+      width: 40px;
+      height: 2px;
+      background-color: #ccc;
+      margin: 0 8px;
+    }
+
+    /* ADD THIS NEW RULE */
+    .line.completed {
+      background-color: #198754; /* Same green as the checkmark */
+    }
+    .step-block.active .circle { background-color: #0d6efd; }
+    .step-block.active .label { color: #0d6efd; font-weight: bold; }
+    .step-block.previous .circle {
+      background-color: #198754; /* Green for completed */
+      color: #fff;
+      border: 2px solid #198754;
+    }
+    .step-block.previous .label {
+      color: #1c4e80;
+      font-weight: bold; /* Make completed labels bold too */
+    }
+
+    /* This adds the checkmark */
+    .step-block.previous .circle::before {
+      content: '✓';
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    /* This hides the original number on completed steps */
+    .step-block.previous .circle .step-number {
+      display: none;
+    }
+    /* Back Button Styles */
+    /* This is the new wrapper for the top bar */
+    .top-bar-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 20px 40px 0; /* Padding for the whole bar */
+      box-sizing: border-box;
+    }
+
+    /* This holds the progress bar in the middle */
+    .top-bar-center {
+      flex-grow: 1; /* Allows it to take up the available center space */
+    }
+
+    /* This holds the back button (right) and a spacer (left) */
+    .top-bar-side {
+      flex-basis: 150px; /* Give the side a fixed width */
+      flex-shrink: 0;
+    }
+
+    /* This styles the back button itself */
+    .btn-back {
+      font-size: 1rem;
+      color: #1c4e80;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: bold;
+      transition: color 0.2s ease;
+      /* Aligned right by its parent */
+      text-align: right;
+    }
+    .btn-back:hover {
+      color: #0d6efd;
+    }
+    .btn-back i {
+      font-size: 1.6rem;
+    }
+
+    /* On mobile, stack them vertically */
+    @media (max-width: 768px) {
+      .top-bar-wrapper {
+        flex-direction: column;
+        padding: 10px 20px 0;
+      }
+      .top-bar-side {
+        width: 100%;
+        flex-basis: auto;
+      }
+      .progress-bar-custom {
+         margin-top: 20px; /* Add space below the back button */
+      }
+    }
+    .btn-back {
+      font-size: 1rem;
+      color: #1c4e80; /* Matches your theme color */
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px; /* Space between icon and text */
+      font-weight: bold;
+      transition: color 0.2s ease;
+    }
+    .btn-back:hover {
+      color: #0d6efd; /* Highlight color on hover */
+    }
+    .btn-back i {
+      font-size: 1.6rem; /* Makes the icon a bit larger */
+    }
+
+
+    /* Mobile styles */
+    @media (max-width: 768px) {
+      header h1 { font-size: 1.4rem; }
+      header img { height: 50px; right: 15px; }
+      .line { display: none; }
+      .progress-bar-custom { gap: 16px; }
+    }
+  </style>
+
+  {% block head_css %}{% endblock %}
+</head>
+<body>
+
+  <header>
+    <header>
+    <a href="/" style="text-decoration: none; display: flex; align-items: center; color: inherit;">
+      <img src="/static/logo.png" alt="لوگو">
+      <h1>نرم‌افزار انتخاب الکتروپمپ</h1>
+    </a>
+  </header>
+  </header>
+
+  <div class="top-bar-wrapper">
+
+    <div class="top-bar-side" style="text-align: right;">
+      {% if request.endpoint and request.endpoint != 'welcome' %}
+        <a href="javascript:history.back()" class="btn-back" title="بازگشت">
+          <i class="bi bi-arrow-right-short"></i>
+          <span>بازگشت</span>
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="top-bar-center">
+      {% block progress_bar %}{% endblock %}
+    </div>
+
+    <div class="top-bar-side">
+      </div>
+
+  </div>
+
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>کلیه حقوق مادی و معنوی این وبسایت متعلق به شرکت پمپ پارس ناصری© میباشد | 2025</p>
+  </footer>
+
+  {% block scripts %}
+  <script>
+    // ... your existing scripts ...
+
+    // Auto-disable buttons on submit
+    document.addEventListener('submit', function (e) {
+      const btn = e.target.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-2"></span> لطفاً صبر کنید...';
+      }
+    });
+    document.addEventListener('input', function (e) {
+      // Only apply to inputs where the user types text/numbers
+      if (!e.target.matches('input[type="text"], input[type="number"], input[type="tel"]')) return;
+
+      const persianMap = {
+        '۰': '0',
+        '۱': '1',
+        '۲': '2',
+        '۳': '3',
+        '۴': '4',
+        '۵': '5',
+        '۶': '6',
+        '۷': '7',
+        '۸': '8',
+        '۹': '9'
+      };
+      const arabicMap = {
+        '٠': '0',
+        '١': '1',
+        '٢': '2',
+        '٣': '3',
+        '٤': '4',
+        '٥': '5',
+        '٦': '6',
+        '٧': '7',
+        '٨': '8',
+        '٩': '9'
+      };
+
+      let val = e.target.value;
+      let original = val;
+
+      // Replace Persian digits
+      val = val.replace(/[۰-۹]/g, function (w) {
+        return persianMap[w];
+      });
+      // Replace Arabic digits
+      val = val.replace(/[٠-٩]/g, function (w) {
+        return arabicMap[w];
+      });
+
+      if (val !== original) {
+        e.target.value = val;
+      }
+    });
+
+      document.addEventListener("DOMContentLoaded", function() {
+      // پیدا کردن تمام ورودی‌ها، سلکتورها و متن‌ها
+      const inputs = document.querySelectorAll('input, select, textarea');
+
+      inputs.forEach(input => {
+      // هنگامی که فیلد خالی است و کاربر دکمه تایید را می‌زند
+      input.oninvalid = function(e) {
+      e.target.setCustomValidity("");
+      if (!e.target.validity.valid) {
+      e.target.setCustomValidity("لطفاً این فیلد را تکمیل نمایید.");
+    }
+    };
+
+      // هنگامی که کاربر شروع به تایپ می‌کند، خطا پاک شود
+      input.oninput = function(e) {
+      e.target.setCustomValidity("");
+    };
+    });
+    });
+  </script>
+  {% endblock %}
+
+</body>
+</html>
