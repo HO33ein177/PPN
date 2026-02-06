@@ -1,0 +1,164 @@
+{% extends "layout.html" %}
+
+{% block title %}ورود سریع مقادیر{% endblock %}
+
+{% block content %}
+<div class="container py-4 mobile-scroll-fix">
+    <div class="input-card shadow-lg">
+        <div class="card-header text-center">
+            <h3 class="fw-bold mb-0">طراحی سریع </h3>
+            <p class="text-muted small mt-2">مقادیر مورد نظر را مستقیماً وارد نمایید</p>
+        </div>
+
+        <div class="card-body p-4">
+            <form action="{{ url_for('simple_input') }}" method="post" onsubmit="calculateFinalFlow()">
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">دبی مورد نیاز </label>
+                    <div class="input-group">
+                        <select id="flow_unit" class="input-group-text bg-light text-dark fw-bold" style="cursor: pointer;" onchange="calculateFinalFlow()">
+                            <option value="m3h">m³/h</option>
+                            <option value="ls">L/s</option>
+                        </select>
+
+                        <input type="number" step="0.01" id="display_flow" class="form-control text-center fw-bold fs-4"
+                               placeholder="0.0" required oninput="calculateFinalFlow()">
+                    </div>
+                    <input type="hidden" name="flow" id="final_flow">
+                    <div class="form-text text-end">واحد را انتخاب کرده و مقدار دبی را وارد کنید.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">هد کل مورد نیاز </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-dark fw-bold">m</span>
+                        <input type="number" step="0.1" name="head" class="form-control text-center fw-bold fs-4"
+                               placeholder="0.0" required
+                               style="color: #198754 !important; border-color: #198754 !important;">
+                    </div>
+                    <div class="form-text text-end">
+                        مجموع ارتفاع عمودی و افت اصطکاک مسیر
+                    </div>
+                </div>
+
+                <div class="alert alert-warning py-2 mb-4" style="font-size: 0.85rem;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    در این حالت، محاسبات افت لوله‌ها انجام نمی‌شود و هد وارد شده ملاک انتخاب پمپ است.
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg py-3 fw-bold">
+                        تایید و جستجوی پمپ
+                        <i class="bi bi-search ms-2"></i>
+                    </button>
+                    <a href="/" class="btn btn-link text-secondary">بازگشت به صفحه اصلی</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* حذف استایل‌های تیره و بازگشت به حالت روشن */
+    .form-control {
+        background-color: #ffffff !important;
+        color: #212529 !important;
+        border: 1px solid #ced4da;
+    }
+
+    /* اصلاح اسکرول موبایل */
+    html, body {
+        height: auto !important;
+        min-height: 100% !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mobile-scroll-fix {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 80vh;
+        padding-bottom: 50px;
+    }
+
+    .input-card {
+        width: 100%;
+        max-width: 480px;
+        background: #ffffff;
+        border-radius: 20px;
+        overflow: hidden;
+        direction: rtl;
+        text-align: right;
+        border: none;
+    }
+
+    .card-header {
+        background: #f8f9fa;
+        padding: 25px;
+        border-bottom: 1px solid #eee;
+        color: #1c4e80;
+    }
+
+    .input-group-text {
+        min-width: 75px;
+        justify-content: center;
+    }
+
+    input[type=number] {
+        font-family: 'Vazirmatn', sans-serif;
+    }
+
+    /* استایل تمرکز روی فیلدها */
+    input:focus, select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15) !important;
+        border-color: #198754 !important;
+        outline: none;
+    }
+
+    @media (max-width: 576px) {
+        .input-card {
+            border-radius: 15px;
+            margin: 10px;
+        }
+        .card-body {
+            padding: 20px !important;
+        }
+    }
+</style>
+
+<div id="flow-error" class="text-danger fw-bold mt-1" style="display: none; font-size: 0.85rem;">
+    <i class="bi bi-exclamation-circle-fill"></i>
+    حداکثر دبی مجاز 800 مترمکعب بر ساعت می‌باشد.
+</div>
+
+<script>
+    function calculateFinalFlow() {
+        const displayVal = parseFloat(document.getElementById('display_flow').value);
+        const unit = document.getElementById('flow_unit').value;
+        const finalInput = document.getElementById('final_flow');
+        const errorDiv = document.getElementById('flow-error');
+        const submitBtn = document.querySelector('button[type="submit"]');
+
+        if (isNaN(displayVal)) {
+            finalInput.value = "";
+            errorDiv.style.display = "none";
+            return;
+        }
+
+        // تبدیل واحد
+        let m3hValue = (unit === 'ls') ? (displayVal * 3.6) : displayVal;
+
+        // چک کردن سقف 800
+        if (m3hValue > 800) {
+            errorDiv.style.display = "block";
+            submitBtn.disabled = true;
+            finalInput.value = "";
+        } else {
+            errorDiv.style.display = "none";
+            submitBtn.disabled = false;
+            finalInput.value = m3hValue.toFixed(3);
+        }
+    }
+</script>
+{% endblock %}
