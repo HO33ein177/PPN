@@ -207,12 +207,9 @@ def step_design():
     if not flow:
         return redirect(url_for("welcome"))
 
-    # 1. Pull only the pipe losses and local losses from the session
+    # Strictly sum of Step 2 rows and local losses
     pipe_head = _to_float(session.get("total_pipe_head") or 0)
     other_head = _to_float(session.get("total_other_head") or 0)
-
-    # 2. Total Head is now strictly the sum of the Step 2 rows and local losses
-    # The 'dynamic_level' from Step 1 is now ignored.
     total_h = pipe_head + other_head
 
     if request.method == "POST":
@@ -221,6 +218,39 @@ def step_design():
 
     return render_template("step_design.html", flow=flow, head=round(total_h, 2))
 
+
+@app.route("/step_cable", methods=["GET", "POST"])
+def step_cable():
+    selected_model = request.args.get("model") or session.get("pump_model")
+
+    pump_details = {}
+    try:
+        # header=1 skips the Persian labels in row 1
+        df_cat = pd.read_excel('data/cat_Data.xlsx', header=1)
+        match = df_cat[df_cat['Shoowing_name'].astype(str).str.strip() == str(selected_model).strip()]
+
+        if not match.empty:
+            row = match.iloc[0]
+
+            # --- FIX: Convert decimal values to integers ---
+            pump_details = {
+                'showing_name': row.get('Shoowing_name'),
+                'motor_power': row.get('Motor_Power'),
+                'current': row.get('current'),
+                # Use int() here to remove the .0
+                'pump_model': int(row.get('Pump_Model')) if pd.notnull(row.get('Pump_Model')) else 'N/A',
+                'pump_no': int(row.get('Pump_no')) if pd.notnull(row.get('Pump_no')) else 0,
+                'motor_model': row.get('Motor_Model')
+            }
+            session.update(pump_details)
+    except Exception as e:
+        print(f"Error: {e}")
+
+    if request.method == "POST":
+        # ... your existing cable save logic ...
+        return redirect(url_for("result"))
+
+    return render_template("step_cable.html", pump=pump_details)
 
 # --- CORE CALCULATION ENGINE ---
 
@@ -312,21 +342,6 @@ def api_match():
     return jsonify({"flow": qr, "required_head": hr, "candidates": formatted})
 
 
-@app.route("/step_cable", methods=["GET", "POST"])
-def step_cable():
-    if request.method == "POST":
-        session.update({
-            'pump_model': request.form.get("pump_model"),
-            'pump_power': request.form.get("pump_power"),
-            'has_cable': request.form.get("want_cable") == 'yes',
-            'cable_length': request.form.get("cable_length"),
-            'cable_section': request.form.get("cable_section"),
-            'cable_type': request.form.get("cable_type")
-        })
-        return redirect(url_for("result"))
-    return render_template("step_cable.html",
-                           pump_model=request.args.get("selected_model"),
-                           pump_power=request.args.get("selected_power"))
 
 
 @app.route("/result")

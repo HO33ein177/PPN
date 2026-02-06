@@ -256,8 +256,10 @@
     });
 
     document.getElementById('confirm-btn').onclick = () => {
-      window.location.href = `/step_cable?selected_model=${encodeURIComponent(selectedModel)}&selected_power=${selectedPower}`;
-    };
+    if (!selectedModel) return alert('لطفاً یک پمپ انتخاب کنید');
+    // Redirect to the NEW cable selection page, passing the model
+    window.location.href = `/step_cable?model=${encodeURIComponent(selectedModel)}`;
+};
 
   });
 </script>

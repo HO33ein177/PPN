@@ -1,153 +1,67 @@
 {% extends "layout.html" %}
-
-{% block title %}مرحله ۵ - انتخاب کابل{% endblock %}
-
-{% block head_css %}
-  <style>
-    .cable-card {
-      background: #fff;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      max-width: 700px;
-      margin: 40px auto;
-      text-align: right;
-    }
-    .specs-box {
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 25px;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .spec-item { text-align: center; min-width: 100px; }
-    .spec-label { font-size: 0.85rem; color: #666; display: block; }
-    .spec-val { font-weight: bold; color: #1c4e80; font-size: 1.1rem; }
-    
-    .btn-skip { 
-      color: #666; text-decoration: none; font-size: 0.9rem; 
-      display: inline-block; margin-top: 20px; border-bottom: 1px dashed #ccc; 
-    }
-    .btn-skip:hover { color: #dc3545; border-color: #dc3545; }
-  </style>
-{% endblock %}
-
-{% block progress_bar %}
-  <div class="progress-bar-custom">
-    <div class="step-block previous">
-      <div class="circle"><span class="step-number">✓</span></div>
-      <div class="label">نقطه کار</div>
-    </div>
-    <div class="line completed"></div>
-    <div class="step-block previous">
-      <div class="circle"><span class="step-number">✓</span></div>
-      <div class="label">پمپ</div>
-    </div>
-    <div class="line completed"></div>
-    <div class="step-block active">
-      <div class="circle"><span class="step-number">5</span></div>
-      <div class="label">انتخاب کابل</div>
-    </div>
-  </div>
-{% endblock %}
-
 {% block content %}
-<div class="cable-card">
-  
-  <div class="text-center mb-4">
-    <h3 class="fw-bold text-primary">انتخاب کابل برق (اختیاری)</h3>
-    <p class="text-muted">آیا مایل به محاسبه و انتخاب کابل برای این پمپ هستید؟</p>
-  </div>
-
-  <div class="specs-box">
-    <div class="spec-item">
-      <span class="spec-label">مدل پمپ</span>
-      <span class="spec-val" dir="ltr">{{ pump_model }}</span>
-    </div>
-    <div class="spec-item">
-      <span class="spec-label">توان مصرفی</span>
-      <span class="spec-val" dir="ltr">{{ pump_power }} kW</span>
-    </div>
-    <div class="spec-item">
-      <span class="spec-label">طول پیشنهادی</span>
-      <span class="spec-val" dir="ltr">{{ default_length }} m</span>
-    </div>
-  </div>
-
-  <form action="{{ url_for('step_cable') }}" method="post">
-    
-    <input type="hidden" name="pump_model" value="{{ pump_model }}">
-    <input type="hidden" name="pump_power" value="{{ pump_power }}">
-
-    <div class="form-check form-switch mb-4" dir="rtl" style="font-size: 1.1rem;">
-      <input class="form-check-input" type="checkbox" id="wantCable" name="want_cable" value="yes" onchange="toggleForm()">
-      <label class="form-check-label me-2 fw-bold" for="wantCable">بله، مشخصات کابل را وارد می‌کنم</label>
-    </div>
-
-    <div id="cableInputs" style="display: none; border-top: 1px solid #eee; padding-top: 20px;">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label fw-bold small">طول کابل (متر)</label>
-          <input type="number" class="form-control" name="cable_length" value="{{ default_length }}">
+<div class="container mt-5" dir="rtl">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-dark text-white py-3 text-center">
+            <h4 class="mb-0">جزئیات الکتروپمپ و کابل</h4>
         </div>
-        <div class="col-md-6">
-          <label class="form-label fw-bold small">نوع کابل</label>
-          <select class="form-select" name="cable_type">
-            <option value="flat">کابل تخت (Flat)</option>
-            <option value="round">کابل گرد (Round)</option>
-          </select>
-        </div>
-        <div class="col-md-12">
-          <label class="form-label fw-bold small">سطح مقطع (mm²)</label>
-          <div class="input-group">
-             <span class="input-group-text bg-light">3 x</span>
-             <select class="form-select" name="cable_section">
-               <option value="1.5">1.5</option>
-               <option value="2.5">2.5</option>
-               <option value="4">4</option>
-               <option value="6">6</option>
-               <option value="10">10</option>
-               <option value="16">16</option>
-               <option value="25">25</option>
-               <option value="35">35</option>
-               <option value="50">50</option>
-             </select>
-          </div>
-          <div class="form-text text-muted">سطح مقطع را بر اساس جدول استاندارد جریان انتخاب کنید.</div>
-        </div>
-      </div>
-    </div>
+        <div class="card-body p-4">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">مدل الکتروپمپ</label>
+                    <input type="text" class="form-control bg-light fw-bold text-center" value="{{ pump.showing_name or 'یافت نشد' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">توان مصرفی (kW)</label>
+                    <input type="text" class="form-control bg-light fw-bold text-center" value="{{ pump.motor_power or '0' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">آمپر نامی (A)</label>
+                    <input type="text" class="form-control bg-light fw-bold text-center" value="{{ pump.current or '0' }}" readonly>
+                </div>
+            </div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">مدل پمپ</label>
+                    <input type="text" class="form-control bg-light fw-bold text-center" value="{{ pump.pump_model or 'N/A' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">تعداد طبقات</label>
+                    <input type="text" class="form-control bg-light fw-bold text-center" value="{{ pump.pump_no or '0' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">تیپ موتور</label>
+                    <input type="text" class="form-control bg-light fw-bold text-center" value="{{ pump.motor_model or 'N/A' }}" readonly>
+                </div>
+            </div>
 
-    <div class="d-grid gap-2 mt-5">
-      <button type="submit" class="btn btn-primary btn-lg">
-        مشاهده گزارش نهایی
-        <i class="bi bi-file-earmark-check ms-2"></i>
-      </button>
+            <hr class="my-4">
+
+            <form action="{{ url_for('step_cable') }}" method="POST">
+                <div class="row mb-4 justify-content-center">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">فاصله تابلو از چاه (متر):</label>
+                        <input type="number" name="panel_distance" class="form-control border-primary form-control-lg text-center" value="10" required>
+                    </div>
+                </div>
+
+                <div class="row mb-5 justify-content-center">
+                    <div class="col-md-8 text-center">
+                        <label class="form-label fw-bold mb-3 d-block">نوع راه اندازی:</label>
+                        <div class="btn-group w-100">
+                            <input type="radio" class="btn-check" name="start_method" id="s1" value="تک ضرب" checked>
+                            <label class="btn btn-outline-primary py-3" for="s1">تک ضرب(درایو و...)</label>
+                            <input type="radio" class="btn-check" name="start_method" id="s2" value="دو ضرب">
+                            <label class="btn btn-outline-primary py-3" for="s2">دو ضرب (ستاره-مثلث)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success btn-lg px-5 shadow">تایید و مشاهده گزارش نهایی</button>
+                </div>
+            </form>
+        </div>
     </div>
-    
-  </form>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  function toggleForm() {
-    const isChecked = document.getElementById('wantCable').checked;
-    const inputs = document.getElementById('cableInputs');
-    const fields = inputs.querySelectorAll('input, select');
-    
-    if (isChecked) {
-      inputs.style.display = 'block';
-      fields.forEach(f => f.required = true);
-    } else {
-      inputs.style.display = 'none';
-      fields.forEach(f => f.required = false);
-    }
-  }
-</script>
 {% endblock %}
