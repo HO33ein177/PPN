@@ -1,30 +1,45 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container py-5">
-    <h3 class="text-center mb-4">پمپ‌های پیشنهادی برای Q={{q}} و H={{h}}</h3>
-
-    <div class="row">
-        {% for pump in pumps %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm border-{{ 'success' if loop.first else 'secondary' }}">
-                <div class="card-header fw-bold text-center">
-                    {{ pump.name }}
+<div class="container mt-5" dir="rtl">
+    <div class="card shadow-lg border-0 border-top border-success border-5">
+        <div class="card-header bg-white py-3 text-center">
+            <h3 class="text-success fw-bold">گزارش نهایی طراحی سیستم</h3>
+        </div>
+        <div class="card-body p-5">
+            <div class="row g-4 mb-5">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded shadow-sm">
+                        <h5 class="border-bottom pb-2 mb-3"><i class="bi bi-info-circle me-2"></i>مشخصات پمپ</h5>
+                        <p>مدل: <strong>{{ session.get('pump_model') }}</strong></p>
+                        <p>جریان نامی: <strong>{{ session.get('current') }} آمپر</strong></p>
+                        <p>مدل بدنه: <strong>{{ session.get('pump_model_val') }}</strong></p>
+                    </div>
                 </div>
-                <div class="card-body text-end">
-                    <p><strong>راندمان در این نقطه:</strong> {{ pump.efficiency_at_q }}%</p>
-                    <p><strong>هد تولیدی:</strong> {{ pump.head_at_q }} متر</p>
-                    <p><strong>توان موتور:</strong> {{ pump.power }} kW</p>
-                    <hr>
-                    <p class="small text-muted">وزن: {{ pump.weight }}kg | طول: {{ pump.length }}mm</p>
-                </div>
-                <div class="card-footer text-center">
-                    <button class="btn btn-outline-primary btn-sm">مشاهده کاتالوگ</button>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded shadow-sm">
+                        <h5 class="border-bottom pb-2 mb-3"><i class="bi bi-geo-alt me-2"></i>شرایط پروژه</h5>
+                        <p>دبی نهایی: <strong>{{ session.get('final_q') }} m³/h</strong></p>
+                        <p>هد نهایی: <strong>{{ session.get('final_h') }} متر</strong></p>
+                        <p>نوع راه اندازی: <strong>{{ session.get('start_method') }}</strong></p>
+                    </div>
                 </div>
             </div>
+
+            <div class="text-center bg-success text-white p-4 rounded-4 shadow-lg mb-4">
+                <h4 class="mb-3">سایز کابل پیشنهادی نهایی</h4>
+                <div class="display-1 fw-bold">{{ session.get('selected_cable') }} <small class="h3">mm²</small></div>
+                <p class="mt-2 mb-0 opacity-75">سطح مقطع محاسباتی تئوریک: {{ session.get('calculated_area') }} mm²</p>
+            </div>
+
+
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-5">
+                <button onclick="window.print()" class="btn btn-outline-dark btn-lg px-5">
+                    <i class="bi bi-printer me-2"></i> چاپ گزارش
+                </button>
+                <a href="{{ url_for('welcome') }}" class="btn btn-primary btn-lg px-5">محاسبه مجدد</a>
+            </div>
         </div>
-        {% else %}
-        <div class="alert alert-warning text-center">متأسفانه پمپی با مشخصات وارد شده یافت نشد.</div>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}

@@ -221,35 +221,64 @@ def step_design():
 
 @app.route("/step_cable", methods=["GET", "POST"])
 def step_cable():
+    # 1. Get chosen model from URL or Session
     selected_model = request.args.get("model") or session.get("pump_model")
+    if selected_model:
+        session['pump_model'] = selected_model
 
     pump_details = {}
     try:
-        # header=1 skips the Persian labels in row 1
+        # Load data (skipping Persian header row)
         df_cat = pd.read_excel('data/cat_Data.xlsx', header=1)
-        match = df_cat[df_cat['Shoowing_name'].astype(str).str.strip() == str(selected_model).strip()]
+        # Clean search
+        df_cat['Shoowing_name'] = df_cat['Shoowing_name'].astype(str).str.strip()
+        match = df_cat[df_cat['Shoowing_name'] == str(selected_model).strip()]
 
         if not match.empty:
             row = match.iloc[0]
-
-            # --- FIX: Convert decimal values to integers ---
+            # Build the 'pump' dictionary the HTML expects
             pump_details = {
                 'showing_name': row.get('Shoowing_name'),
                 'motor_power': row.get('Motor_Power'),
                 'current': row.get('current'),
-                # Use int() here to remove the .0
+                # Convert to int to remove .0
                 'pump_model': int(row.get('Pump_Model')) if pd.notnull(row.get('Pump_Model')) else 'N/A',
                 'pump_no': int(row.get('Pump_no')) if pd.notnull(row.get('Pump_no')) else 0,
                 'motor_model': row.get('Motor_Model')
             }
-            session.update(pump_details)
+            session.update(pump_details)  # Save for final calculation
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error fetching pump for cable step: {e}")
 
     if request.method == "POST":
-        # ... your existing cable save logic ...
+        # Cable Calculation Logic
+        panel_dist = _to_float(request.form.get("panel_distance"))
+        well_depth = _to_float(session.get("final_h"))  # Or use specific depth session
+        total_l = panel_dist + well_depth
+
+        current = _to_float(session.get('current', 0))
+        area = total_l * current * 0.0027803571429
+
+        if request.form.get("start_method") == 'دو ضرب':
+            area *= 0.58
+
+        # Select from vector
+        vector = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400]
+        selected_v = vector[-1]
+        for v in vector:
+            if v >= area:
+                selected_v = v
+                break
+
+        session.update({
+            'panel_distance': panel_dist,
+            'start_method': request.form.get("start_method"),
+            'selected_cable': selected_v,
+            'calc_area': round(area, 2)
+        })
         return redirect(url_for("result"))
 
+    # IMPORTANT: Pass pump=pump_details to fix the UndefinedError
     return render_template("step_cable.html", pump=pump_details)
 
 # --- CORE CALCULATION ENGINE ---
@@ -346,7 +375,7 @@ def api_match():
 
 @app.route("/result")
 def result():
-    return render_template("result.html",
+    return render_template("results.html",
                            flow=session.get("final_q"),
                            depth=session.get("final_h"),
                            pump_model=session.get("pump_model"),
