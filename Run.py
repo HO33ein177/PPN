@@ -203,85 +203,126 @@ def step2():
 
 @app.route("/step_design", methods=["GET", "POST"])
 def step_design():
+    # 1. Persistence: Ensure the model name stays in the session
+    selected_model_name = request.args.get("model") or session.get("pump_model")
+    if selected_model_name:
+        session['pump_model'] = selected_model_name
+
     flow = session.get("flow")
     if not flow:
         return redirect(url_for("welcome"))
 
-    # Strictly sum of Step 2 rows and local losses
+    # 2. Fetch Pump Details (Data/cat_Data.xlsx)
+    pump_details = {}
+    if selected_model_name:
+        try:
+            df_cat = pd.read_excel('data/cat_Data.xlsx', header=1)
+            df_cat['Shoowing_name'] = df_cat['Shoowing_name'].astype(str).str.strip()
+            match = df_cat[df_cat['Shoowing_name'] == str(selected_model_name).strip()]
+
+            if not match.empty:
+                row = match.iloc[0]
+                pump_details = {
+                    'showing_name': row.get('Shoowing_name'),
+                    'motor_power': row.get('Motor_Power'),
+                    'current': _to_float(row.get('current')),
+                    'pump_model': int(row.get('Pump_Model')) if pd.notnull(row.get('Pump_Model')) else 'N/A',
+                    'pump_no': int(row.get('Pump_no')) if pd.notnull(row.get('Pump_no')) else 0,
+                    'motor_model': row.get('Motor_Model')
+                }
+                session.update(pump_details)
+        except Exception as e:
+            print(f"Excel Error in step_design: {e}")
+
+    # 3. Calculation: Sum of pipe losses only
     pipe_head = _to_float(session.get("total_pipe_head") or 0)
     other_head = _to_float(session.get("total_other_head") or 0)
     total_h = pipe_head + other_head
 
+    # 4. Handle POST (Form Submission)
     if request.method == "POST":
         session.update({'final_q': flow, 'final_h': total_h})
         return redirect(url_for("match_page"))
 
-    return render_template("step_design.html", flow=flow, head=round(total_h, 2))
+    # 5. FIX: Ensure a return statement exists for all GET requests
+    return render_template("step_design.html",
+                           flow=flow,
+                           head=round(total_h, 2),
+                           pump=pump_details)
 
 
 @app.route("/step_cable", methods=["GET", "POST"])
 def step_cable():
-    # 1. Get chosen model from URL or Session
-    selected_model = request.args.get("model") or session.get("pump_model")
-    if selected_model:
-        session['pump_model'] = selected_model
+    # 1. Capture model from URL (Redirected from Match Page)
+    selected_model_name = request.args.get("model") or session.get("pump_model")
+    if selected_model_name:
+        session['pump_model'] = selected_model_name
 
     pump_details = {}
-    try:
-        # Load data (skipping Persian header row)
-        df_cat = pd.read_excel('data/cat_Data.xlsx', header=1)
-        # Clean search
-        df_cat['Shoowing_name'] = df_cat['Shoowing_name'].astype(str).str.strip()
-        match = df_cat[df_cat['Shoowing_name'] == str(selected_model).strip()]
+    # 2. Fetch technical data from Excel
+    if selected_model_name:
+        try:
+            df_cat = pd.read_excel('data/cat_Data.xlsx', header=1)
+            df_cat['Shoowing_name'] = df_cat['Shoowing_name'].astype(str).str.strip()
+            match = df_cat[df_cat['Shoowing_name'] == str(selected_model_name).strip()]
 
-        if not match.empty:
-            row = match.iloc[0]
-            # Build the 'pump' dictionary the HTML expects
-            pump_details = {
-                'showing_name': row.get('Shoowing_name'),
-                'motor_power': row.get('Motor_Power'),
-                'current': row.get('current'),
-                # Convert to int to remove .0
-                'pump_model': int(row.get('Pump_Model')) if pd.notnull(row.get('Pump_Model')) else 'N/A',
-                'pump_no': int(row.get('Pump_no')) if pd.notnull(row.get('Pump_no')) else 0,
-                'motor_model': row.get('Motor_Model')
-            }
-            session.update(pump_details)  # Save for final calculation
-    except Exception as e:
-        print(f"Error fetching pump for cable step: {e}")
+            if not match.empty:
+                row = match.iloc[0]
+                pump_details = {
+                    'showing_name': row.get('Shoowing_name'),
+                    'motor_power': row.get('Motor_Power'),
+                    'current': _to_float(row.get('current')),
+                    'pump_model': int(row.get('Pump_Model')) if pd.notnull(row.get('Pump_Model')) else 'N/A',
+                    'pump_no': int(row.get('Pump_no')) if pd.notnull(row.get('Pump_no')) else 0,
+                    'motor_model': row.get('Motor_Model')
+                }
+                session.update(pump_details)
+        except Exception as e:
+            print(f"Excel Error: {e}")
 
     if request.method == "POST":
-        # Cable Calculation Logic
-        panel_dist = _to_float(request.form.get("panel_distance"))
-        well_depth = _to_float(session.get("final_h"))  # Or use specific depth session
-        total_l = panel_dist + well_depth
+        # 1. Capture the distance from the form
+        panel_dist = _to_float(request.form.get("panel_distance") or 0)
+        start_method = request.form.get("start_method")
 
-        current = _to_float(session.get('current', 0))
-        area = total_l * current * 0.0027803571429
+        # 2. THE FIX: Check if the user came from the 'Advanced' path
+        # If 'total_pipe_head' is missing or 0, it means we are in 'Simple' path.
+        # We ignore ALL session heads and force it to 0.
+        if session.get("total_pipe_head") and _to_float(session.get("total_pipe_head")) > 0:
+            well_head = _to_float(session.get("final_h") or 0)
+        else:
+            well_head = 0.0  # Force zero to kill the "100" ghost value
 
-        if request.form.get("start_method") == 'دو ضرب':
-            area *= 0.58
+        # 3. Final Length for calculation
+        total_l = panel_dist + well_head
+        current = _to_float(session.get('current') or 0)
 
-        # Select from vector
-        vector = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400]
-        selected_v = vector[-1]
-        for v in vector:
-            if v >= area:
-                selected_v = v
+        # 4. Calculation Formula: L * I * 0.0027803571429
+        calc_area = total_l * current * 0.0027803571429
+
+        # Multiplier for 'دو ضرب'
+        if start_method == 'دو ضرب':
+            calc_area *= 0.58
+
+        # 5. Matching against the vector
+        cable_vector = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400]
+        selected_cable = "یافت نشد"
+        for size in cable_vector:
+            if size >= calc_area:
+                selected_cable = size
                 break
 
         session.update({
             'panel_distance': panel_dist,
-            'start_method': request.form.get("start_method"),
-            'selected_cable': selected_v,
-            'calc_area': round(area, 2)
+            'start_method': start_method,
+            'selected_cable': selected_cable,
+            'calc_area': round(calc_area, 3),
+            'total_l_calc': total_l,
+            'well_head_debug': well_head  # Save this to see it in the result
         })
         return redirect(url_for("result"))
 
-    # IMPORTANT: Pass pump=pump_details to fix the UndefinedError
     return render_template("step_cable.html", pump=pump_details)
-
-# --- CORE CALCULATION ENGINE ---
 
 def get_best_pumps(qr, hr):
     file_path = 'data/cat_Data.xlsx'
