@@ -18,7 +18,10 @@ import pdfkit
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-change-me')
 
-
+@app.route("/guide")
+def guide():
+    session.clear()
+    return render_template("guide.html")
 # --- HELPER FUNCTIONS ---
 
 def _normalize_number(s):
