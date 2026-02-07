@@ -211,8 +211,8 @@
     });
 
     // ۳. مدیریت لیست و تعاملات
-    let selectedModel = null, selectedPower = null;
-    const container = document.getElementById('candidates-list');
+let selectedModel = null, selectedPower = null, selectedEfficiency = null;
+const container = document.getElementById('candidates-list');
     container.innerHTML = '';
 
     candidates.forEach((c, idx) => {
@@ -235,6 +235,7 @@
         card.classList.add('selected');
         selectedModel = c.model;
         selectedPower = c.power;
+        selectedEfficiency = c.efficiency; // Capture the efficiency!
         document.getElementById('action-area').style.display = 'block';
 
         // هایلایت کردن منحنی انتخاب شده در هر دو نمودار
@@ -256,8 +257,27 @@
 
     document.getElementById('confirm-btn').onclick = () => {
     if (!selectedModel) return alert('لطفاً یک پمپ انتخاب کنید');
-    // Redirect to the NEW cable selection page, passing the model
-    window.location.href = `/step_cable?model=${encodeURIComponent(selectedModel)}`;
+
+    // Create a selection object
+    const selection = {
+        model: selectedModel,
+        power: selectedPower,
+        efficiency: selectedEfficiency
+    };
+
+    // Send it to the server
+    fetch('/select_pump', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selection)
+    }).then(response => {
+        if (response.ok) {
+            // Only redirect if the server successfully saved the data
+            window.location.href = `/step_cable?model=${encodeURIComponent(selectedModel)}`;
+        } else {
+            alert("خطا در سیستم. لطفاً دوباره تلاش کنید.");
+        }
+    });
 };
 
   });

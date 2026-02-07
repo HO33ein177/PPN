@@ -1,83 +1,88 @@
 {% extends "layout.html" %}
 {% block content %}
-<main class="container">
-    <div class="card shadow-lg border-0 border-top border-primary border-5" style="max-width: 950px; width: 100%;">
-        <div class="card-body p-5 text-end" dir="rtl">
+<main class="container d-flex justify-content-center align-items-center py-5">
+    <div class="card shadow-lg border-0 border-top border-primary border-5 w-100"
+         style="max-width: 950px; direction: rtl; text-align: right;">
 
-            <h2 class="text-primary mb-4 fw-bold text-center">گزارش نهایی فنی سیستم</h2>
+        <div class="card-body p-5">
+            <h2 class="text-primary mb-5 fw-bold text-center">گزارش نهایی فنی سیستم</h2>
 
             <div class="mb-5">
-                <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-gear-wide-connected me-2"></i>مشخصات الکتروپمپ انتخاب شده</h5>
-                <div class="row g-3">
-                   <div class="col-md-4">
-                        <div class="p-3 border rounded bg-light">
-                            <small class="text-muted d-block">مدل پمپ:</small>
-                            <span class="fw-bold h5">{{ pump_model|default('---') }}</span>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 border rounded bg-light">
-                            <small class="text-muted d-block">توان موتور:</small>
-                            <span class="fw-bold h5">{{ motor_power|default(0) }} kW</span>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 border rounded bg-light">
-                            <small class="text-muted d-block">راندمان در نقطه:</small>
-                            <span class="fw-bold h5">{{ pump_efficiency|default(0)|round(1) }}%</span>
-                        </div>
-                    </div>
-                </div>
+    <h5 class="border-bottom pb-2 mb-3 text-primary">
+        <i class="bi bi-gear-wide-connected ms-2"></i>مشخصات الکتروپمپ انتخاب شده
+    </h5>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="p-3 border rounded bg-light">
+                <small class="text-muted d-block">مدل پمپ:</small>
+                <span class="fw-bold h5">{{ pump_model|default('---') }}</span>
             </div>
-
-            {% if is_advanced %}
-            <div class="mb-5">
-                <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-reception-4 me-2"></i>جزئیات لوله‌کشی و اتصالات</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm table-bordered text-center">
-                        <thead class="table-secondary">
-                            <tr>
-                                <th>نوع قطعه/لوله</th>
-                                <th>سایز</th>
-                                <th>تعداد/طول</th>
-                                <th>افت (متر)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in fittings %}
-                            <tr>
-                                <td>{{ item.name }}</td>
-                                <td>{{ item.size }}</td>
-                                <td>{{ item.quantity }}</td>
-                                <td>{{ item.loss|round(2) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot class="table-light">
-                            <tr>
-                                <th colspan="3" class="text-start">مجموع افت اصطکاکی:</th>
-                                <th class="text-danger">{{ total_pipe_loss|round(2) }} متر</th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 border rounded bg-light">
+                <small class="text-muted d-block">توان موتور:</small>
+                <span class="fw-bold h5 d-block" dir="ltr">{{ motor_power|default(0) }} kW</span>
             </div>
-            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 border rounded bg-light">
+                <small class="text-muted d-block">راندمان در نقطه:</small>
+                <span class="fw-bold h5 d-block" dir="ltr">{{ pump_efficiency|default(0)|round(1) }}%</span>
+            </div>
+        </div>
+    </div>
+</div>
 
 
+
+
+{% if is_advanced %}
+<div class="mb-5">
+    <h5 class="border-bottom pb-2 mb-3 text-primary">
+        <i class="bi bi-reception-4 ms-2"></i>جزئیات لوله‌کشی و اتصالات
+    </h5>
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle shadow-sm">
+            <thead class="table-dark"> <tr>
+                    <th style="text-align: right; width: 40%;">نوع قطعه/لوله</th>
+                    <th style="text-align: center;">سایز</th>
+                    <th style="text-align: center;">تعداد/طول</th>
+                    <th style="text-align: center;">افت (متر)</th>
+                </tr>
+            </thead>
+            <tbody style="text-align: right;">
+                {% for item in fittings %}
+                <tr>
+                    <td class="fw-bold">{{ item.name }}</td>
+                    <td dir="ltr" class="text-center">{{ item.size }}</td>
+                    <td dir="ltr" class="text-center">{{ item.quantity }}</td>
+                    <td dir="ltr" class="text-center text-danger fw-bold">{{ item.loss|default(0)|round(2) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr class="fw-bold">
+                    <td colspan="3" style="text-align: left;">مجموع افت هیدرولیکی سیستم:</td>
+                    <td dir="ltr" class="text-center text-danger h5 mb-0">{{ total_pipe_loss|default(0)|round(2) }} م</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endif %}
 
             <div class="mb-4">
-                <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-lightning-charge me-2"></i>مشخصات کابل برق</h5>
-                <div class="alert alert-success d-flex align-items-center justify-content-between p-4">
-                    <div>
+                <h5 class="border-bottom pb-2 mb-3 text-primary">
+                    <i class="bi bi-lightning-charge ms-2"></i>مشخصات کابل برق
+                </h5>
+                <div class="alert alert-success d-flex align-items-center justify-content-between p-4 flex-wrap">
+                    <div class="text-right">
                         <h4 class="mb-1">سایز کابل پیشنهادی:</h4>
-                        <div class="display-4 fw-bold">{{ selected_cable }} <small class="h4">mm²</small></div>
+                        <div class="display-4 fw-bold" dir="ltr">{{ selected_cable|default('---') }} <small class="h4">mm²</small></div>
                     </div>
-                    <div class="text-start">
-                        <p class="mb-1">
-                            <strong>طول کل:</strong> {{ total_length|default(0)|round(1) }} متر
-                        </p>
-                        <p class="mb-0"><strong>راه اندازی:</strong> {{ start_method }}</p>
+                    <div class="text-right">
+                        <p class="mb-1"><strong>طول کل:</strong> <span dir="ltr">{{ total_length|default(0)|round(1) }}</span> متر</p>
+                        <p class="mb-0"><strong>راه اندازی:</strong> {{ start_method|default('---') }}</p>
                     </div>
                 </div>
             </div>
@@ -85,12 +90,11 @@
             <div class="d-print-none d-flex justify-content-center gap-3 mt-5">
                 {% if not is_pdf %}
                 <a href="{{ url_for('download_report') }}" class="btn btn-success btn-lg px-5 shadow fw-bold">
-                    <i class="bi bi-file-earmark-pdf-fill me-2"></i> دریافت فایل PDF گزارش
+                    <i class="bi bi-file-earmark-pdf-fill ms-2"></i> دریافت فایل PDF گزارش
                 </a>
                 <a href="{{ url_for('welcome') }}" class="btn btn-outline-primary btn-lg px-4">شروع مجدد</a>
                 {% endif %}
             </div>
-
         </div>
     </div>
 </main>

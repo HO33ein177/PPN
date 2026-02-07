@@ -453,6 +453,20 @@ def step_cable():
                            previous_step=url_for('match_page'))
 
 
+@app.route('/select_pump', methods=['POST'])
+def select_pump():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data received"}), 400
+
+    # Save the chosen pump details to the session
+    session['selected_model'] = data.get('model')
+    session['motor_power'] = data.get('power')
+    session['pump_efficiency'] = data.get('efficiency')
+
+    return jsonify({"status": "success"})
+
+
 @app.route('/result')
 def result():
     # Detect mode based on whether fittings exist in session
