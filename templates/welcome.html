@@ -11,22 +11,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap" rel="stylesheet">
 
   <style>
+    /* --- SCALE & ZOOM FIX START --- */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Prevent scrolling on desktop */
+    }
+
     body {
       background: #e3f0ff;
       direction: rtl;
       text-align: center;
-      /* --- MOBILE SCROLL FIX START --- */
-      min-height: 100vh;
-      height: auto; /* Changed from 100vh to allow growth */
-      overflow-x: hidden;
-      overflow-y: auto; /* Ensure vertical scrolling is allowed */
-      -webkit-overflow-scrolling: touch;
-      /* --- MOBILE SCROLL FIX END --- */
-      margin: 0;
       display: flex;
       flex-direction: column;
       font-family: 'Vazirmatn', sans-serif;
+
+      /* Apply 90% Zoom */
+      zoom: 90%;
+      -moz-transform: scale(0.9); /* Firefox Support */
+      -moz-transform-origin: top center;
     }
+    /* --- SCALE & ZOOM FIX END --- */
 
     /* Header */
     .app-header {
@@ -61,8 +67,6 @@
       margin: 0;
       letter-spacing: -0.5px;
       line-height: 1;
-      display: flex;
-      align-items: center;
     }
 
     .app-header nav a {
@@ -77,17 +81,15 @@
       color: #1c4e80;
     }
 
-    /* Main Content Area */
+    /* Main Content Area - Centered for 100vh look */
     main {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 10px;
       width: 100%;
       box-sizing: border-box;
-      /* --- MOBILE SCROLL FIX --- */
-      min-height: 0;
     }
 
     .content-box {
@@ -97,13 +99,9 @@
       box-shadow: 0 10px 30px rgba(28, 78, 128, 0.1);
       max-width: 900px;
       width: 100%;
-      /* --- MOBILE SCROLL FIX --- */
-      max-height: none; /* Changed from 100% to allow content to push footer down */
       text-align: center;
-      margin: 20px 0;
     }
 
-    /* Typography */
     .center-content h1 {
       font-size: 2.2rem;
       color: #1c4e80;
@@ -116,7 +114,6 @@
       margin-bottom: 2rem;
     }
 
-    /* Option Cards Styles */
     .option-card {
       cursor: pointer;
       transition: all 0.3s ease;
@@ -142,10 +139,9 @@
       text-align: center;
       font-size: 0.9rem;
       flex-shrink: 0;
-      margin-top: auto; /* Push to bottom of content */
     }
 
-    /* Splash & Transition */
+    /* Splash & Transitions */
     #splash {
       position: fixed; inset: 0; background: radial-gradient(circle at center, #0a3d62 0%, #134f86 100%);
       display: flex; justify-content: center; align-items: center; z-index: 9999;
@@ -153,12 +149,12 @@
     }
     #splash.hidden { opacity: 0; pointer-events: none; }
     #splash img { width: min(55vw, 700px); height: auto; position: relative; animation: glowLogo 2.2s ease-out forwards; }
+
     @keyframes glowLogo {
       0%   { transform: scale(0.85); opacity: 0; filter: drop-shadow(0 0 0px rgba(255,255,255,0)); }
-      40%  { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 48px rgba(255,255,255,0.6)); }
-      70%  { transform: scale(0.99); filter: drop-shadow(0 0 32px rgba(255,255,255,0.4)); }
       100% { transform: scale(1); filter: drop-shadow(0 0 24px rgba(255,255,255,0.3)); }
     }
+
     #transition-overlay {
       position: fixed; inset: 0; background: #e3f0ff; z-index: 9998;
       display: flex; justify-content: center; align-items: center;
@@ -168,12 +164,12 @@
     #transition-overlay img { width: 180px; height: 180px; transition: transform 1.2s ease, opacity 1.2s ease; }
     #transition-overlay.active img { transform: scale(20); opacity: 0; }
 
+    /* Responsive - Disable Fixed Height on Mobile */
     @media (max-width: 768px) {
-      body { overflow-y: auto; } /* Force scroll for mobile */
-      main { align-items: flex-start; } /* Allow content to start at top */
-      .app-header { flex-direction: column; gap: 10px; padding: 15px; }
-      .content-box { padding: 30px 20px; margin-top: 10px; }
-      .logo-link h1 { font-size: 1.1rem; }
+      body, html { overflow: auto; zoom: 100%; -moz-transform: scale(1); }
+      main { align-items: flex-start; padding-top: 20px; }
+      .content-box { padding: 30px 20px; }
+      .app-header { flex-direction: column; gap: 10px; }
     }
   </style>
 </head>
@@ -205,8 +201,7 @@
         <h1>روش طراحی را انتخاب کنید</h1>
         <p class="subtitle">برای شروع یکی از دو روش زیر را انتخاب نمایید:</p>
 
-        <div class="row justify-content-center g-4 mt-3">
-
+        <div class="row justify-content-center g-4 mt-1">
           <div class="col-md-5">
             <div class="card h-100 shadow-sm option-card" onclick="selectMethod('advanced')">
               <div class="card-body p-4 d-flex flex-column">
@@ -214,10 +209,8 @@
                   <i class="bi bi-gear-wide-connected"></i>
                 </div>
                 <h3 class="fw-bold text-primary">طراحی پیشرفته</h3>
-                <p class="text-muted mt-3 mb-4" style="line-height: 1.6;">
-                  محاسبه دقیق هد و دبی با دریافت مشخصات چاه و خط لوله.
-                  <br>
-                  <small class="text-secondary">(شامل محاسبه افت فشار)</small>
+                <p class="text-muted mt-2 mb-3 small" style="line-height: 1.5;">
+                  محاسبه دقیق با جزئیات خط لوله و افت فشار.
                 </p>
                 <button class="btn btn-outline-primary w-100 rounded-pill mt-auto">شروع پیشرفته</button>
               </div>
@@ -231,42 +224,31 @@
                   <i class="bi bi-lightning-charge-fill"></i>
                 </div>
                 <h3 class="fw-bold text-success">طراحی ساده</h3>
-                <p class="text-muted mt-3 mb-4" style="line-height: 1.6;">
-                  ورود مستقیم مقادیر <strong>دبی (Q)</strong> و <strong>هد (H)</strong>.
-                  <br>
-                  <small class="text-secondary">(بدون نیاز به جزئیات خط لوله)</small>
+                <p class="text-muted mt-2 mb-3 small" style="line-height: 1.5;">
+                  ورود مستقیم دبی (Q) و هد (H).
                 </p>
                 <button class="btn btn-outline-success w-100 rounded-pill mt-auto">شروع ساده</button>
               </div>
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
   </main>
 
   <footer>
-    کلیه حقوق مادی و معنوی این وبسایت متعلق به شرکت پمپ پارس ناصری© میباشد | 2025
+    کلیه حقوق مادی و معنوی این وبسایت متعلق به شرکت پمپ پارس ناصری© میباشد | 2026
   </footer>
 
   <script>
     window.addEventListener("load", () => {
-      setTimeout(() => document.getElementById("splash").classList.add("hidden"), 2500);
+      setTimeout(() => document.getElementById("splash").classList.add("hidden"), 2000);
     });
 
     function selectMethod(type) {
-      const overlay = document.getElementById("transition-overlay");
-      overlay.classList.add("active");
-
+      document.getElementById("transition-overlay").classList.add("active");
       setTimeout(() => {
-        if (type === 'advanced') {
-          window.location.href = "/init_advanced";
-        }
-        if (type === 'simple'){
-          window.location.href = "/init_simple";
-        }
+        window.location.href = (type === 'advanced') ? "/init_advanced" : "/init_simple";
       }, 1000);
     }
   </script>
