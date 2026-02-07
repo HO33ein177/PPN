@@ -3,7 +3,38 @@
 {% block title %}نقطه کار سیستم{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<style>
+    /* --- SCALE & ZOOM FIX --- */
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    body {
+        background: #e3f0ff;
+        zoom: 90%;
+        -moz-transform: scale(0.9);
+        -moz-transform-origin: top center;
+        display: flex;
+        flex-direction: column;
+    }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+    .design-card {
+        max-width: 550px;
+        width: 100%;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+        direction: rtl;
+        text-align: right;
+    }
+    .card-header { background: #f8f9fa; padding: 25px; border-bottom: 1px solid #eee; }
+    .input-group-text { min-width: 80px; justify-content: center; }
+
+    @media (max-width: 768px) {
+        body, html { overflow: auto; zoom: 100%; -moz-transform: scale(1); }
+    }
+</style>
+
+<main>
     <div class="design-card">
         <div class="card-header text-center">
             <h3 class="mb-0">نقطه کاری سیستم </h3>
@@ -12,73 +43,32 @@
 
         <div class="card-body p-4">
             <form action="{{ url_for('step_design') }}" method="post">
+                <div class="mb-4">
+                    <label class="form-label fw-bold">دبی مورد نیاز (Q<sub>r</sub>)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-dark fw-bold">m³/h</span>
+                        <input type="text" class="form-control bg-light text-center fw-bold fs-4" value="{{ flow }}" readonly>
+                    </div>
+                </div>
 
                 <div class="mb-4">
-    <label class="form-label fw-bold">دبی مورد نیاز (Q<sub>r</sub>)</label>
-    <div class="input-group">
-        <span class="input-group-text bg-light text-dark fw-bold">m³/h</span>
-        <input type="text" class="form-control bg-light text-center fw-bold fs-4"
-               value="{{ flow }}" readonly>
-    </div>
-    <div class="form-text">دبی تعیین شده در مرحله اول.</div>
-</div>
-
-<div class="mb-4">
-    <label class="form-label fw-bold">هد کل مورد نیاز (H<sub>r</sub>)</label>
-    <div class="input-group">
-        <span class="input-group-text bg-light text-dark fw-bold">m</span>
-        <input type="text" class="form-control bg-light text-center fw-bold fs-4"
-               value="{{ head }}" readonly
-               style=" !important; ">
-    </div>
-    <div class="form-text" style=";">
-        شامل مجموع افت اصطکاک لوله‌ها، ارتفاع کل مسیر و سایر افت‌های موضعی.
-    </div>
-</div>
-
-
+                    <label class="form-label fw-bold">هد کل مورد نیاز (H<sub>r</sub>)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-dark fw-bold">m</span>
+                        <input type="text" class="form-control bg-light text-center fw-bold fs-4" value="{{ head }}" readonly>
+                    </div>
+                </div>
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold">
-                        جستجوی پمپ‌های مناسب
+                        جستجوی پمپ‌های مناسب <i class="bi bi-search ms-2"></i>
                     </button>
-                    <a href="{{ url_for('step2') }}" class="btn btn-outline-secondary">
-                        اصلاح مشخصات لوله‌کشی
+                    <a href="{{ previous_step }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-2"></i> اصلاح مشخصات لوله‌کشی
                     </a>
                 </div>
             </form>
         </div>
     </div>
-</div>
-
-<style>
-    .design-card {
-        max-width: 550px;
-        margin: 0 auto;
-        background: #ffffff;
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        overflow: hidden;
-        direction: rtl;
-        text-align: right;
-    }
-    .card-header {
-        background: #f8f9fa;
-        padding: 25px;
-        border-bottom: 1px solid #eee;
-    }
-    .input-group-text {
-        min-width: 80px;
-        justify-content: center;
-    }
-    input[readonly] {
-        background-color: #f8f9fa !important;
-        border: 2px solid #dee2e6;
-        color: #212529 !important;
-        cursor: default;
-    }
-    .fs-4 {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-</style>
+</main>
 {% endblock %}

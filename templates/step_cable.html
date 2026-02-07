@@ -1,51 +1,75 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container mt-5" dir="rtl">
-    <div class="card shadow border-0">
+<style>
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    body {
+        background: #e3f0ff;
+        zoom: 90%;
+        -moz-transform: scale(0.9);
+        -moz-transform-origin: top center;
+        display: flex;
+        flex-direction: column;
+    }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+    .card { border-radius: 20px; overflow: hidden; }
+
+    @media (max-width: 768px) {
+        body, html { overflow: auto; zoom: 100%; -moz-transform: scale(1); }
+    }
+</style>
+
+<main class="container">
+    <div class="card shadow border-0" style="max-width: 800px; margin: auto;">
         <div class="card-header bg-dark text-white py-3 text-center">
             <h4 class="mb-0">مشخصات فنی و انتخاب کابل</h4>
         </div>
-        <div class="card-body p-4">
-            <div class="row g-3 mb-4 bg-light p-3 rounded">
+        <div class="card-body p-4" dir="rtl">
+            <div class="row g-3 mb-4 bg-light p-3 rounded mx-0 text-center">
                 <div class="col-md-4">
-                    <label class="small text-muted">مدل الکتروپمپ</label>
+                    <label class="small text-muted d-block">مدل الکتروپمپ</label>
                     <div class="fw-bold">{{ pump.showing_name or '---' }}</div>
                 </div>
-                <div class="col-md-4">
-                    <label class="small text-muted">جریان نامی (A)</label>
+                <div class="col-md-4 border-end border-start">
+                    <label class="small text-muted d-block">جریان نامی (A)</label>
                     <div class="fw-bold text-danger">{{ pump.current or '0' }} A</div>
                 </div>
                 <div class="col-md-4">
-                    <label class="small text-muted">مدل پمپ (بدنه)</label>
+                    <label class="small text-muted d-block">مدل پمپ (بدنه)</label>
                     <div class="fw-bold">{{ pump.pump_model or '---' }}</div>
                 </div>
             </div>
 
             <form method="POST">
                 <div class="row mb-4 justify-content-center">
-                    <div class="col-md-6 text-center">
-                        <label class="form-label fw-bold text-primary">فاصله تابلو از چاه (متر):</label>
-                        <input type="number" name="panel_distance" class="form-control form-control-lg border-primary text-center" placeholder="فاصله را وارد کنید" required>
+                    <div class="col-md-8 text-center">
+                        <label class="form-label fw-bold text-primary">فاصله تابلو از دهانه چاه (متر):</label>
+                        <input type="number" name="panel_distance" class="form-control form-control-lg border-primary text-center" placeholder="مثلاً 50" required>
                     </div>
                 </div>
 
                 <div class="row mb-5 justify-content-center">
-                    <div class="col-md-8 text-center">
+                    <div class="col-md-10 text-center">
                         <label class="form-label fw-bold d-block mb-3">نوع راه اندازی:</label>
                         <div class="btn-group w-100">
                             <input type="radio" class="btn-check" name="start_method" id="s1" value="تک ضرب" checked>
-                            <label class="btn btn-outline-primary py-3" for="s1">تک ضرب</label>
+                            <label class="btn btn-outline-primary py-3" for="s1">تک ضرب (Direct)</label>
                             <input type="radio" class="btn-check" name="start_method" id="s2" value="دو ضرب">
                             <label class="btn btn-outline-primary py-3" for="s2">دو ضرب (ستاره-مثلث)</label>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-center">
-                    <button type="submit" class="btn btn-success btn-lg px-5">محاسبه نهایی</button>
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ previous_step }}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="bi bi-arrow-right me-2"></i> انتخاب مجدد پمپ
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg px-5">
+                        محاسبه نهایی <i class="bi bi-calculator ms-2"></i>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</main>
 {% endblock %}

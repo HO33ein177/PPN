@@ -320,6 +320,28 @@
     };
     });
     });
+
+      // This event fires every time the page is shown,
+    // including when navigating back via the 'Back' button.
+    window.addEventListener('pageshow', function (event) {
+        // Find the submit button
+        const submitBtn = document.querySelector('button[type="submit"]');
+
+        if (submitBtn) {
+            // 1. Reset the text (Change this to your original button text)
+            // If the page is step_design, use "جستجوی پمپ‌های مناسب"
+            // If the page is step_cable, use "محاسبه نهایی"
+            if (window.location.pathname.includes('step_design')) {
+                submitBtn.innerHTML = 'جستجوی پمپ‌های مناسب <i class="bi bi-search ms-2"></i>';
+            } else if (window.location.pathname.includes('step_cable')) {
+                submitBtn.innerHTML = 'محاسبه نهایی <i class="bi bi-calculator ms-2"></i>';
+            }
+
+            // 2. Re-enable the button
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('disabled');
+        }
+    });
   </script>
   {% endblock %}
 
