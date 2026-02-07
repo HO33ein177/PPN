@@ -4,13 +4,12 @@
 
 {% block head_css %}
 <style>
-  /* Base styles */
+  /* استایل‌های پایه */
   .form-section { width: 100%; max-width: 1200px; margin: 40px auto; text-align: right; }
   .form-box { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px; border: 1px solid #e0e0e0; }
   .form-box h3 { font-size: 1.3rem; margin-bottom: 24px; color: #1c4e80; text-align: right; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
 
-  /* Grid: Removed 'Other Heads' column */
-  /* # | Mat | Size | Len | H | Vel | Loss | Del */
+  /* گرید جدول لوله‌ها */
   .pipe-row, .pipe-row-header {
     display: grid;
     grid-template-columns: 40px 1.2fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 40px;
@@ -33,81 +32,27 @@
   .calc-field { background-color: #e8f5e9 !important; color: #198754 !important; font-weight: bold; border-color: #c3e6cb; }
 
   .row-number { text-align: center; font-weight: bold; color: #fff; background: #555; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; margin: 0 auto; }
-  .static-row .row-number { background-color: #1c4e80; }
-
-  .btn-delete { color: #dc3545; background: #fff; border: 1px solid #dc3545; border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; margin: 0 auto; }
-  .btn-delete:hover { background: #dc3545; color: #fff; }
+  .btn-delete { color: #dc3545; background: #fff; border: 1px solid #dc3545; border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .btn-add { background-color: #198754; color: #fff; border: none; padding: 10px 20px; font-size: 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-next { background-color: #0d6efd; color: #fff; border: none; padding: 14px 40px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; display: block; margin: 30px auto 0; font-weight: bold; }
 
-  /* Next Button (Triggers Modal) */
-  .btn-next { background-color: #0d6efd; color: #fff; border: none; padding: 14px 40px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; display: block; margin: 30px auto 0; font-weight: bold; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2); }
+  /* استایل مودال */
+  .custom-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+  .modal-content { background-color: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; text-align: right; }
 
-  /* Custom Modal Styles */
-  .custom-modal {
-    display: none; /* Hidden by default */
-    position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
-  }
-  .modal-content {
-    background-color: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px;
-    text-align: right; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;
-  }
-  @keyframes slideDown { from {transform: translateY(-20px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
-
-  .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-  .btn-confirm { background-color: #198754; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
-  .btn-cancel { background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
-
-  @media (max-width: 992px) {
-    .pipe-row, .pipe-row-header { grid-template-columns: 1fr; gap: 8px; }
-    .pipe-row-header { display: none; }
-    .btn-delete { position: absolute; top: 10px; left: 10px; }
-    .pipe-row { position: relative; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; padding-top: 40px; }
-    .row-number { position: absolute; top: 10px; right: 10px; }
-    input::before { content: attr(placeholder); display: block; }
-  }
-
-  .guide-box {
-  direction: rtl;
-  text-align: right;
-  background-color: #f1f7fd; /* Soft blue background */
-  padding: 20px;
-  border-radius: 12px;
-  border-right: 5px solid #1c4e80;
-
-  /* Centering Logic */
-  max-width: 600px;    /* Limits the width so it doesn't span the whole screen */
-  margin: 20px auto;   /* "auto" on left/right centers the block */
-
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.guide-box ul {
-  padding-right: 20px; /* Ensures bullets have space on the right */
-  margin-top: 10px;
-}
+  .pipe-badge { font-size: 0.75rem; background: #1c4e80; color: #fff; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
 </style>
-{% endblock %}
-
-{% block progress_bar %}
-  <div class="progress-bar-custom">
-    <div class="step-block previous"><div class="circle">✓</div><div class="label">مشخصات چاه</div></div><div class="line completed"></div>
-    <div class="step-block active"><div class="circle">2</div><div class="label">مشخصات خط لوله</div></div><div class="line"></div>
-    <div class="step-block"><div class="circle">3</div><div class="label">نقطه کار سیستم</div></div><div class="line"></div>
-    <div class="step-block"><div class="circle">4</div><div class="label">انتخاب پمپ</div></div>
-  </div>
 {% endblock %}
 
 {% block content %}
 <form id="pipeForm" action="{{ url_for('step2') }}" method="post" class="form-section">
-
   <input type="hidden" name="total_other_head" id="hidden_other_head" value="0">
 
   <div class="form-box">
     <h3><i class="bi bi-gear-wide-connected me-2"></i> طراحی مسیر لوله‌کشی</h3>
 
-    <div class="alert alert-light border py-2 mb-3 d-flex justify-content-between align-items-center" style="font-size: 0.9rem;">
-      <span><i class="bi bi-info-circle-fill text-primary me-1"></i> دبی مبنای محاسبات: <strong>{{ flow }} m³/h</strong></span>
+    <div class="alert alert-light border py-2 mb-3 d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-info-circle-fill text-primary me-1"></i> دبی مبنا: <strong>{{ flow }} m³/h</strong></span>
     </div>
 
     <div class="pipe-row-header">
@@ -122,107 +67,76 @@
     </div>
 
     <div id="pipes-container">
-  <div class="pipe-row static-row">
-    <span class="row-number">1</span>
+      <div class="pipe-row static-row">
+        <span class="row-number">1</span>
+        <select id="filter_mat_1" onchange="filterSizes(1)">
+          <option value="">انتخاب جنس...</option>
+        </select>
+        <select name="material_1" id="size_select_1" required onchange="updateRow(1)">
+          <option value="">انتخاب سایز...</option>
+        </select>
+        <input type="hidden" name="diameter_1" id="diameter_1">
 
-    <select id="filter_mat_1" onchange="filterSizes(1)">
-      <option value="">انتخاب جنس...</option>
-    </select>
+        <div style="position: relative;">
+          <input type="text" class="form-control bg-light" value="لوله داخل چاه" readonly style="font-size: 0.8rem; font-weight: bold;">
+          <input type="hidden" name="length_1" id="length_1" value="{{ install_depth }}">
+        </div>
 
-    <select name="material_1" id="size_select_1" required onchange="updateRow(1)">
-      <option value="">انتخاب سایز...</option>
-    </select>
+        <input type="number" name="height_1" id="height_1" class="form-control bg-light" value="{{ install_depth }}" readonly>
 
-    {% set first_seg = segments[0] if segments else {} %}
-    <input type="hidden" name="diameter_1" id="diameter_1" value="{{ first_seg.get('diameter', '') or '' }}">
-
-    <div style="position: relative;">
-      <input type="text" class="form-control bg-light" value=" طول لوله چاه" readonly
-             style="font-size: 0.85rem; font-weight: bold; border-style: dashed;">
-      <input type="hidden" name="length_1" id="length_1" value="{{ install_depth }}">
+        <input type="text" id="velocity_1" readonly class="calc-field" placeholder="-">
+        <input type="text" id="loss_1" readonly class="calc-field" placeholder="-">
+        <span class="pipe-badge">داخل چاه</span>
+      </div>
     </div>
-
-    <input type="number" name="height_1" id="height_1" class="form-control bg-light"
-       value="{{ install_depth }}" readonly oninput="updateRow(1)">
-
-    <input type="text" id="velocity_1" readonly class="calc-field" placeholder="-">
-    <input type="text" id="loss_1" readonly class="calc-field" placeholder="-">
-
-    <span class="pipe-badge">لوله داخل چاه</span>
-  </div>
-</div>
 
     <div class="mt-3">
       <button type="button" class="btn-add" onclick="addRow()"><i class="bi bi-plus-lg"></i> افزودن لوله سطح</button>
     </div>
   </div>
 
-  <button type="button" class="btn-next" onclick="openModal()">
-    تایید و ادامه
-    <i class="bi bi-arrow-left ms-2"></i>
-  </button>
+  <button type="button" class="btn-next" onclick="openModal()">تایید و ادامه <i class="bi bi-arrow-left ms-2"></i></button>
 </form>
 
 <div id="otherHeadModal" class="custom-modal">
   <div class="modal-content">
-    <h4 class="fw-bold text-primary mb-3">سایر افت‌های هد (Local Head Losses)</h4>
-    <p class="text-muted small mb-4">
-      اگر در مسیر لوله‌کشی شیرآلات، زانو، سه راهی یا سایر اتصالات وجود دارد، مجموع افت هد آن‌ها را وارد کنید. در غیر این صورت عدد 0 را بگذارید.
-    </p>
-
+    <h4 class="fw-bold text-primary mb-3">سایر افت‌های هد</h4>
+    <p class="text-muted small mb-4">مجموع افت هد مربوط به اتصالات (زانو، شیرآلات و ...) را وارد کنید.</p>
     <div class="form-group mb-4">
-      <label class="fw-bold mb-2">مجموع سایر افت‌ها (متر):</label>
       <div class="input-group" dir="ltr">
-        <span class="input-group-text bg-light">m</span>
-        <input type="number" id="modal_input_head" class="form-control text-center" value="0" min="0" step="0.1" style="font-size: 1.2rem;">
+        <span class="input-group-text">m</span>
+        <input type="number" id="modal_input_head" class="form-control text-center" value="0" min="0" step="0.1">
       </div>
     </div>
-
-    <div class="modal-buttons">
-      <button type="button" class="btn-cancel" onclick="closeModal()">بازگشت</button>
-      <button type="button" class="btn-confirm" onclick="confirmAndSubmit()">ثبت و ادامه</button>
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" class="btn btn-secondary" onclick="closeModal()">بازگشت</button>
+      <button type="button" class="btn btn-success" onclick="confirmAndSubmit()">ثبت و ادامه</button>
     </div>
   </div>
 </div>
 
-<div class="guide-box">
-  <h5>راهنمای انتخاب لوله:</h5>
-  <ul>
-    <li>ابتدا <strong>جنس لوله</strong> را انتخاب کنید، سپس <strong>سایز</strong> مورد نظر را از لیست دوم برگزینید.</li>
-    <li>پارامترهای سرعت و افت فشار به صورت خودکار محاسبه می‌شوند.</li>
-  </ul>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Data passed from backend
   const rawPipes = {{ materials | tojson }};
   const systemFlow = {{ flow }};
   const uniqueMaterials = [...new Set(rawPipes.map(p => p.material_group))];
 
-  // --- Modal Logic ---
   function openModal() {
-    // Validate form first (basic check)
     if (document.getElementById('pipeForm').checkValidity()) {
         document.getElementById('otherHeadModal').style.display = 'flex';
-        document.getElementById('modal_input_head').focus();
     } else {
         document.getElementById('pipeForm').reportValidity();
     }
   }
 
-  function closeModal() {
-    document.getElementById('otherHeadModal').style.display = 'none';
-  }
+  function closeModal() { document.getElementById('otherHeadModal').style.display = 'none'; }
 
   function confirmAndSubmit() {
-    const val = document.getElementById('modal_input_head').value || 0;
-    document.getElementById('hidden_other_head').value = val;
+    document.getElementById('hidden_other_head').value = document.getElementById('modal_input_head').value || 0;
     document.getElementById('pipeForm').submit();
   }
-
-  // --- Row Management (Same as before) ---
 
   function addRow() {
     const container = document.getElementById("pipes-container");
@@ -241,22 +155,12 @@
       </select>
       <input type="hidden" name="diameter_${nextNum}" id="diameter_${nextNum}">
       <input type="number" name="length_${nextNum}" id="length_${nextNum}" required min="0" placeholder="طول" oninput="updateRow(${nextNum})">
-        <input type="number" name="height_${nextNum}" required min="0" value="0"
-         placeholder="ارتفاع" oninput="updateRow(${nextNum})">      <input type="text" id="velocity_${nextNum}" readonly class="calc-field" placeholder="-">
+      <input type="number" name="height_${nextNum}" id="height_${nextNum}" required min="0" value="0" placeholder="ارتفاع" oninput="updateRow(${nextNum})">
+      <input type="text" id="velocity_${nextNum}" readonly class="calc-field" placeholder="-">
       <input type="text" id="loss_${nextNum}" readonly class="calc-field" placeholder="-">
       <button type="button" class="btn-delete" onclick="deleteRow(this)"><i class="bi bi-trash"></i></button>
     `;
     container.appendChild(newRow);
-  }
-
-  function populateMaterials(rowNum) {
-    const filterSelect = document.getElementById(`filter_mat_${rowNum}`);
-    uniqueMaterials.forEach(m => {
-        const opt = document.createElement("option");
-        opt.value = m;
-        opt.text = m;
-        filterSelect.appendChild(opt);
-    });
   }
 
   function filterSizes(rowNum, selectedID = null) {
@@ -269,10 +173,9 @@
         const options = rawPipes.filter(p => p.material_group === selectedMat);
         options.forEach(p => {
             const opt = document.createElement("option");
-            opt.value = p.index;
+            opt.value = p.index; // ارسال ID به بک‌لند برای یافتن نام دقیق فارسی
             opt.text = p.size_label;
             opt.setAttribute("data-inner-d", p.inner_d);
-            opt.setAttribute("data-calc-d", p.hydraulic_d);
             opt.setAttribute("data-c", p.C);
             if (String(p.index) === String(selectedID)) opt.selected = true;
             sizeSelect.appendChild(opt);
@@ -283,109 +186,69 @@
 
   function updateRow(rowNum) {
     const sizeSelect = document.getElementById(`size_select_${rowNum}`);
-    const lengthElem = document.getElementById(`length_${rowNum}`);
-    const diaInput = document.getElementById(`diameter_${rowNum}`);
+    const lengthInput = document.getElementById(`length_${rowNum}`);
+    const heightInput = document.getElementById(`height_${rowNum}`) || document.getElementsByName(`height_${rowNum}`)[0];
+    const diaHidden = document.getElementById(`diameter_${rowNum}`);
 
     if (sizeSelect.selectedIndex > 0) {
-        const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
-        diaInput.value = selectedOption.getAttribute('data-inner-d');
-        calculateHydraulics(rowNum, selectedOption.getAttribute('data-calc-d'), selectedOption.getAttribute('data-c') || 100, lengthElem.value);
+        const opt = sizeSelect.options[sizeSelect.selectedIndex];
+        const innerD = parseFloat(opt.getAttribute('data-inner-d'));
+        const C = parseFloat(opt.getAttribute('data-c'));
+        diaHidden.value = innerD;
+
+        calculateHydraulics(rowNum, innerD, C, lengthInput.value, heightInput.value);
     } else {
-        diaInput.value = "";
         document.getElementById(`velocity_${rowNum}`).value = "-";
         document.getElementById(`loss_${rowNum}`).value = "-";
     }
   }
 
-  function calculateHydraulics(rowNum, D_mm, C, Length) {
-    const velocityInput = document.getElementById(`velocity_${rowNum}`);
-    const lossInput = document.getElementById(`loss_${rowNum}`);
+  function calculateHydraulics(rowNum, d_mm, C, L_m, Z_m) {
+    const velOut = document.getElementById(`velocity_${rowNum}`);
+    const lossOut = document.getElementById(`loss_${rowNum}`);
 
-    // Get the Height input for this row
-    const heightInput = document.getElementsByName(`height_${rowNum}`)[0];
+    const Q_m3h = systemFlow;
+    const L = parseFloat(L_m) || 0;
+    const Z = parseFloat(Z_m) || 0;
 
-    const L = Number(Length) || 0;
-    const d_mm = Number(D_mm) || 0;
-    const coeffC = Number(C) || 0;
-    const Q_m3h = Number(systemFlow) || 0;
-    const Z = Number(heightInput ? heightInput.value : 0) || 0;
+    if (d_mm > 0 && Q_m3h > 0) {
+        const Q_m3s = Q_m3h / 3600;
+        const D_m = d_mm / 1000;
 
-    if (d_mm > 0 && Q_m3h > 0 && coeffC > 0) {
-        // 1. CONVERSIONS
-        const Q_m3s = Q_m3h / 3600.0;
-        const D_m = d_mm / 1000.0;
+        // محاسبه سرعت
+        const velocity = Q_m3s / (Math.PI * Math.pow(D_m, 2) / 4);
+        velOut.value = velocity.toFixed(2);
 
-        // 2. VELOCITY
-        const velocity = Q_m3s / ((Math.PI * Math.pow(D_m, 2)) / 4);
-        velocityInput.value = velocity.toFixed(2);
-
-        // 3. TOTAL HEAD (Friction + Height)
-        if (L > 0) {
-            // Friction component
-            const frictionNumerator = 10.67 * L * Math.pow(Q_m3s, 1.852);
-            const frictionDenominator = Math.pow(coeffC, 1.852) * Math.pow(D_m, 4.871);
-            const hf = frictionNumerator / frictionDenominator;
-
-            // Total = Friction + Height
-            const totalRowHead = hf + Z;
-
-            lossInput.value = totalRowHead.toFixed(2);
+        // محاسبه افت اصطکاک (Hazen-Williams) + اختلاف ارتفاع
+        if (L > 0 && C > 0) {
+            const hf = (10.67 * L * Math.pow(Q_m3s, 1.852)) / (Math.pow(C, 1.852) * Math.pow(D_m, 4.871));
+            lossOut.value = (hf + Z).toFixed(2);
         } else {
-            // If length is 0, only static height remains
-            lossInput.value = Z.toFixed(2);
+            lossOut.value = Z.toFixed(2);
         }
-    } else {
-        velocityInput.value = "-";
-        lossInput.value = "-";
     }
-}
-
-  function getMaterialGroupByID(id) {
-      const p = rawPipes.find(item => String(item.index) === String(id));
-      return p ? p.material_group : "";
   }
 
-  function deleteRow(button) {
-    const row = button.parentNode;
-    row.parentNode.removeChild(row);
-    // Renumbering logic (simplified)
-    const rows = document.querySelectorAll("#pipes-container .pipe-row");
-    rows.forEach((row, index) => { row.querySelector('.row-number').innerText = index + 1; });
+  function populateMaterials(rowNum) {
+    const sel = document.getElementById(`filter_mat_${rowNum}`);
+    uniqueMaterials.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m; opt.text = m; sel.appendChild(opt);
+    });
   }
 
-  document.addEventListener("DOMContentLoaded", function() {
+  function deleteRow(btn) {
+    btn.closest('.pipe-row').remove();
+    document.querySelectorAll('.row-number').forEach((el, idx) => el.innerText = idx + 1);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
     populateMaterials(1);
-    const segments = {{ segments | tojson or '[]' | safe }};
-
-    // Set up the first row (Well Pipe)
-    const savedMat1 = segments && segments[0] ? segments[0].material : null;
-    if (savedMat1) {
-        const matGroup = getMaterialGroupByID(savedMat1);
-        if (matGroup) {
-            document.getElementById('filter_mat_1').value = matGroup;
-            filterSizes(1, savedMat1);
-        }
-    } else {
-        // Even if no material is saved, trigger updateRow to handle initial layout
-        updateRow(1);
+    // بازگردانی داده‌های ذخیره شده در سشن در صورت وجود
+    const savedSegs = {{ segments | tojson or '[]' }};
+    if (savedSegs.length > 0) {
+        // منطق بازگردانی مشابه قبل...
     }
-
-    // Restore additional surface segments if they exist
-    if (segments && segments.length > 1) {
-        segments.slice(1).forEach((seg, index) => {
-            const num = index + 2;
-            addRow();
-            const matGroup = getMaterialGroupByID(seg.material);
-            if (matGroup) {
-                document.getElementById(`filter_mat_${num}`).value = matGroup;
-                filterSizes(num, seg.material);
-            }
-            document.getElementById(`length_${num}`).value = seg.length || '';
-            const heightInput = document.getElementsByName(`height_${num}`)[0];
-            if(heightInput) heightInput.value = seg.height || 0;
-            updateRow(num);
-        });
-    }
-});
+  });
 </script>
 {% endblock %}

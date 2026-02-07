@@ -138,6 +138,15 @@ def step1():
 
 @app.route("/step2", methods=["GET", "POST"])
 def step2():
+    # Load Pipe Data for both GET (dropdowns) and POST (lookup fix)
+    file_path = 'data/pipe_Data.xlsx'  # Ensure this path is correct
+    df_mats = pd.DataFrame()
+    try:
+        if os.path.exists(file_path):
+            df_mats = pd.read_excel(file_path, sheet_name='Sheet1')
+    except Exception as e:
+        print(f"Database Error: {e}")
+
     if request.method == "POST":
         segs = defaultdict(dict)
         for k, v in request.form.items():
@@ -146,7 +155,7 @@ def step2():
                 segs[parts[1]][parts[0]] = v
 
         segments = []
-        fittings_data = []  # Data specifically formatted for the Final Report
+        fittings_data = []
         total_pipe_head_loss = 0
         flow_m3h = session.get('flow', 0)
         q_m3s = flow_m3h / 3600.0 if flow_m3h else 0
@@ -156,12 +165,26 @@ def step2():
             L = _to_float(s.get('length') or 0)
             D_mm = _to_float(s.get('diameter') or 0)
             Z = _to_float(s.get('height') or 0)
-            material_name = str(s.get('material', ''))
 
-            # C Value selection logic
-            C = 140 if "پلی" in material_name else 100
+            # THE FIX: mat_id is currently the number '6', not the name 'فلزی'
+            mat_id = s.get('material', '')
 
-            # Hazen-Williams calculation
+            display_name = mat_id  # Fallback
+            display_size = f"{D_mm} mm"  # Fallback
+            C = 100  # Default C
+
+            # Lookup actual labels from the Excel DataFrame
+            if not df_mats.empty and mat_id:
+                try:
+                    match = df_mats[df_mats['ID'] == int(mat_id)].iloc[0]
+                    display_name = match['Material']  # e.g., 'فلزی'
+                    display_size = match['Diameter']  # e.g., '4 اینچ'
+                    C = match['C_Coef']  # Accurate C from Excel
+                except:
+                    # If lookup fails, stick to basic logic
+                    if "پلی" in str(mat_id): C = 140
+
+            # --- HAZEN-WILLIAMS CALCULATION (PRESERVED) ---
             row_hf = 0
             if L > 0 and D_mm > 0 and q_m3s > 0:
                 D_m = D_mm / 1000.0
@@ -170,18 +193,18 @@ def step2():
             row_total = row_hf + Z
             total_pipe_head_loss += row_total
 
-            # For internal logic
+            # For internal logic (keeping IDs)
             segments.append({
                 'length': L,
                 'diameter': D_mm,
                 'height': Z,
-                'material': material_name
+                'material': mat_id
             })
 
-            # NEW: Data for Final Report (Advanced Mode)
+            # FIX: Use the looked-up display values for the Report
             fittings_data.append({
-                'name': material_name,
-                'size': f"{D_mm} mm",
+                'name': display_name,  # Shows 'فلزی'
+                'size': display_size,  # Shows '4 اینچ'
                 'quantity': f"{L} m",
                 'z_height': Z,
                 'loss': round(row_hf, 2)
@@ -189,14 +212,12 @@ def step2():
 
         # Save to session
         session['segments'] = segments
-        session['fittings_data'] = fittings_data  # Used in results.html
+        session['fittings_data'] = fittings_data
         session['total_pipe_head'] = total_pipe_head_loss
 
-        # Save "Other" losses (Valves, etc)
-        other_loss = _to_float(request.form.get("total_other_head"))
+        # Other losses logic
+        other_loss = _to_float(request.form.get("total_other_head")) or 0
         session['total_other_head'] = other_loss
-
-        # Add a record for other losses in the report data if it exists
         if other_loss > 0:
             session['fittings_data'].append({
                 'name': 'سایر اتصالات و افت‌ها',
@@ -205,32 +226,39 @@ def step2():
                 'z_height': '-',
                 'loss': round(other_loss, 2)
             })
+            total_pipe_head_loss += other_loss
+            session['total_pipe_head'] = total_pipe_head_loss
 
         return redirect(url_for("step_design"))
 
-    # GET Request: Load Pipe Data for Dropdowns
+    # GET Request Logic (Dropdown population)
     file_path = 'data/pipe_Data.xlsx'
     materials_list = []
     try:
         if os.path.exists(file_path):
+            # Read the excel
             df_mats = pd.read_excel(file_path, sheet_name='Sheet1')
-            df_mats = df_mats.rename(columns={
+
+            # CRITICAL: We must provide the exact keys the JavaScript expects
+            # based on your step2.html logic.
+            df_renamed = df_mats.rename(columns={
                 'Material': 'material_group',
                 'Diameter': 'size_label',
                 'ID': 'index',
                 'Inner_D': 'inner_d',
                 'C_Coef': 'C'
             })
-            if 'hydraulic_d' not in df_mats.columns:
-                df_mats['hydraulic_d'] = df_mats['inner_d']
-            df_mats = df_mats.fillna(0)
-            materials_list = df_mats.to_dict(orient='records')
+
+            # Fill NaN values to prevent JS errors
+            df_renamed = df_renamed.fillna(0)
+            materials_list = df_renamed.to_dict(orient='records')
+
     except Exception as e:
         print(f"Database Error: {e}")
 
     return render_template(
         "step2.html",
-        materials=materials_list,
+        materials=materials_list,  # This list is now correctly formatted for JS
         flow=session.get('flow', 0),
         install_depth=session.get('install_depth', 0),
         segments=session.get('segments', [])
@@ -469,76 +497,126 @@ def select_pump():
 
 @app.route('/result')
 def result():
-    # Detect mode based on whether fittings exist in session
-    is_advanced = session.get('fittings_data') is not None
+    # --- DEBUGGING LOGS ---
+    print("\n" + "=" * 50)
+    print("DEBUG: LOADING RESULTS PAGE")
 
+    # Check what is actually in the session
+    fittings_list = session.get('fittings_data', [])
+    total_loss = session.get('total_pipe_head', 0)
+    pump = session.get('selected_model', '---')
+
+    print(f"1. Pump Model Found: {pump}")
+    print(f"2. Total Pipe Loss Found: {total_loss}")
+    print(f"3. Fittings Data Count: {len(fittings_list)}")
+    print(f"4. Full Fittings Content: {fittings_list}")
+    print("=" * 50 + "\n")
+    # --- END DEBUGGING ---
+
+    # We must pass the data using names that MATCH your HTML template
     return render_template(
         'results.html',
         is_pdf=False,
-        is_advanced=session.get('fittings_data') is not None,
-        pump_model=session.get('selected_model', '---'),
+        is_advanced=(len(fittings_list) > 0),
+        pump_model=pump,
         motor_power=session.get('motor_power', 0),
         pump_efficiency=session.get('pump_efficiency', 0),
-        fittings=session.get('fittings_data', []),
-        total_pipe_loss=session.get('total_pipe_loss', 0),
+
+        # IMPORTANT: result.html uses 'fittings', not 'fittings_data'
+        fittings=fittings_list,
+
+        # IMPORTANT: result.html uses 'total_pipe_loss', not 'total_pipe_head'
+        total_pipe_loss=total_loss,
+
         selected_cable=session.get('selected_cable', '---'),
         total_length=session.get('total_l_calc', 0),
-        start_method=session.get('start_method', '---'),
-        calc_area=session.get('calc_area', 0)
+        start_method=session.get('start_method', '---')
     )
 
 
 @app.route('/download_report')
 def download_report():
-    # MUST use the exact same variable names as the result route above
-    html = render_template(
-        'results.html',
-        is_pdf=True,
-        is_advanced=session.get('fittings_data') is not None,
-        pump_model=session.get('selected_model', '---'),
-        motor_power=session.get('motor_power', 0),
-        pump_efficiency=session.get('pump_efficiency', 0),
-        fittings=session.get('fittings_data', []),
-        total_pipe_loss=session.get('total_pipe_loss', 0),
-        selected_cable=session.get('selected_cable', '---'),
-        total_length=session.get('total_l_calc', 0),
-        start_method=session.get('start_method', '---'),
-        calc_area=session.get('calc_area', 0)
-    )
+    def get_absolute_path(relative_path):
+        path = os.path.join(app.root_path, 'static', relative_path)
+        return path.replace('\\', '/')
 
-    # ... your existing options and pdfkit code ...
+    # ۱. استخراج دقیق مشخصات چاه از سشن (بر اساس اسامی مرحله ۱)
+    # این مقادیر مستقیماً در جدول Well Specs و تصویر شماتیک چاپ می‌شوند
+    schematic_data = {
+        'static_level': session.get('static_level', '---'),
+        'dynamic_level': session.get('dynamic_level', '---'),
+        'install_depth': session.get('install_depth', '---'),
+        'dynamic_val': round(session.get('final_h', 0), 1) if session.get('final_h') else 0,
+        'casing_x': 100,
+        'casing_width': 120
+    }
 
-    # 2. Define the rendering options
-    options = {
-        'page-size': 'A4',
-        'encoding': "UTF-8",
-        'margin-top': '10mm',
-        'margin-bottom': '10mm',
-        'margin-left': '10mm',
-        'margin-right': '10mm',
-        'no-outline': None,
-        'quiet': ''
+    # ۲. فرمت‌بندی لیست لوله‌ها برای جدول Piping
+    raw_segments = session.get('fittings_data', [])
+    formatted_segments = []
+    for s in raw_segments:
+        formatted_segments.append({
+            'material_name': s.get('name', '---'),
+            'diameter_label': s.get('size', '---'),
+            'length': s.get('quantity', '---'),
+            'loss': s.get('loss', 0)
+        })
+
+    # ۳. تجمیع تمام داده‌ها (مطابق با متغیرهای فایل report_pdf.html)
+    report_data = {
+        'is_pdf': True,
+        'get_absolute_path': get_absolute_path,
+
+        # بخش ۱: نقطه کار
+        'flow': session.get('final_q', 0),
+        'head': round(session.get('final_h', 0), 2) if session.get('final_h') else 0,
+
+        # بخش ۲: مشخصات چاه (Well Specs)
+        'schematic': schematic_data,
+        'well_diameter': session.get('diameter', '---'),  # این مقدار برای Dwell استفاده می‌شود
+
+        # بخش ۳: تجهیزات
+        'pump_model': session.get('selected_model', '---'),
+        'pump_power': session.get('motor_power', 0),
+
+        # بخش ۴: کابل
+        'cable': {
+            'length': round(session.get('total_l_calc', 0), 1) if session.get('total_l_calc') else 0,
+            'section': session.get('selected_cable', '---'),
+            'type': 'round' if session.get('start_method') != 'دو ضرب' else 'flat'
+        },
+
+        # بخش ۵: لوله‌کشی
+        'segments': formatted_segments
     }
 
     try:
-        # 3. Use the global PDF_CONFIG and the local variables defined above
-        pdf = pdfkit.from_string(
-            html,
-            False,
-            options=options,
-            configuration=PDF_CONFIG
-        )
+        html = render_template('report_pdf.html', **report_data)
 
-        # 4. Prepare the response
+        options = {
+            'page-size': 'A4',
+            'encoding': "UTF-8",
+            'margin-top': '10mm',
+            'margin-bottom': '10mm',
+            'margin-left': '10mm',
+            'margin-right': '10mm',
+            'enable-local-file-access': None,
+            'quiet': ''
+        }
+
+        pdf = pdfkit.from_string(html, False, options=options, configuration=PDF_CONFIG)
+
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'attachment; filename=Technical_Report.pdf'
+        filename = f"Technical_Report_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
 
         return response
 
     except Exception as e:
-        # This will help you debug if wkhtmltopdf fails
-        return f"خطا در تولید فایل پی‌دی‌اف: {str(e)}", 500
+        print(f"PDF Error: {str(e)}")
+        return f"خطا در تولید فایل PDF: {str(e)}", 500
+
 
 
 if __name__ == "__main__":
