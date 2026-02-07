@@ -140,7 +140,7 @@
             <option value="m3h">m³/h</option>
             <option value="lit_sec">Lit/s</option>
           </select>
-          <input type="number" class="form-control" name="flow" required step="0.1" value="{{ flow or '' }}" placeholder="">
+          <input type="number" class="form-control" name="flow" min="0" step="any" required step="0.1" value="{{ flow or '' }}" placeholder="">
         </div>
       </div>
 
@@ -149,7 +149,7 @@
           <label>سطح استاتیک <span class="var-symbol">(H<sub>s</sub>)</span></label>
           <div class="input-group">
             <span class="input-group-text unit-label">m</span>
-            <input type="number" class="form-control" id="static_level" name="static_level"
+            <input type="number" min="0" step="any" class="form-control" id="static_level" name="static_level"
                    required step="0.5" value="{{ static_level or '' }}" oninput="drawWell()">
           </div>
         </div>
@@ -158,7 +158,7 @@
           <label>سطح دینامیک <span class="var-symbol">(H<sub>d</sub>)</span></label>
           <div class="input-group">
             <span class="input-group-text unit-label">m</span>
-            <input type="number" class="form-control" id="dynamic_level" name="dynamic_level"
+            <input type="number" min="0" step="any" class="form-control" id="dynamic_level" name="dynamic_level"
                    required step="0.5" value="{{ dynamic_level or ''  }}" oninput="drawWell()">
           </div>
         </div>
@@ -168,7 +168,7 @@
         <label>عمق نصب پمپ <span class="var-symbol">(D<sub>i</sub>)</span></label>
         <div class="input-group">
           <span class="input-group-text unit-label">m</span>
-          <input type="number" class="form-control" id="install_depth" name="install_depth"
+          <input type="number" min="0" step="any" class="form-control" id="install_depth" name="install_depth"
                  required step="0.5" value="{{ install_depth   }}" oninput="drawWell()">
         </div>
         <div class="form-text text-muted small">محل قرارگیری پمپ نسبت به دهانه چاه</div>
@@ -179,7 +179,7 @@
         <div class="input-group">
           <span class="input-group-text bg-light fw-bold" style="min-width: 70px; color: #333;">Inch</span>
           <input type="hidden" id="diameter_unit" name="diameter_unit" value="inch">
-          <input type="number" class="form-control" id="diameter" name="diameter" required step="0.1" value="{{ diameter or '' }}" oninput="drawWell()">
+          <input type="number" min="0" step="any" class="form-control" id="diameter" name="diameter" required step="0.1" value="{{ diameter or '' }}" oninput="drawWell()">
         </div>
       </div>
 

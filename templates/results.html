@@ -1,68 +1,96 @@
 {% extends "layout.html" %}
 {% block content %}
-<style>
-    /* --- SCALE & ZOOM FIX (Desktop only, Print friendly) --- */
-    @media screen {
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-        body {
-            background: #e3f0ff;
-            zoom: 90%;
-            -moz-transform: scale(0.9);
-            -moz-transform-origin: top center;
-            display: flex;
-            flex-direction: column;
-        }
-        main { flex: 1; display: flex; align-items: center; justify-content: center; }
-    }
+<main class="container">
+    <div class="card shadow-lg border-0 border-top border-primary border-5" style="max-width: 950px; width: 100%;">
+        <div class="card-body p-5 text-end" dir="rtl">
 
-    .card { border-radius: 24px; }
-    .display-1 { font-family: 'Vazirmatn', sans-serif; letter-spacing: -2px; }
+            <h2 class="text-primary mb-4 fw-bold text-center">گزارش نهایی فنی سیستم</h2>
 
-    @media (max-width: 768px) {
-        body, html { overflow: auto; zoom: 100%; -moz-transform: scale(1); }
-    }
-</style>
-
-<main class="container mt-5">
-    <div class="card shadow-lg border-0 border-top border-success border-5" style="max-width: 900px; width: 100%;">
-        <div class="card-body p-5 text-center" dir="rtl">
-            <h2 class="text-success mb-4 fw-bold">گزارش نهایی کابل</h2>
-
-            <div class="row mb-4 bg-light p-3 rounded mx-0">
-                <div class="col-md-6 border-start">
-                    <p class="mb-1 text-muted">طول کل کابل:</p>
-                    <h5 class="fw-bold">{{ session.get('total_l_calc') }} متر</h5>
-                </div>
-                <div class="col-md-6">
-                    <p class="mb-1 text-muted">نوع راه اندازی:</p>
-                    <h5 class="fw-bold">{{ session.get('start_method') }}</h5>
+            <div class="mb-5">
+                <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-gear-wide-connected me-2"></i>مشخصات الکتروپمپ انتخاب شده</h5>
+                <div class="row g-3">
+                   <div class="col-md-4">
+                        <div class="p-3 border rounded bg-light">
+                            <small class="text-muted d-block">مدل پمپ:</small>
+                            <span class="fw-bold h5">{{ pump_model|default('---') }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded bg-light">
+                            <small class="text-muted d-block">توان موتور:</small>
+                            <span class="fw-bold h5">{{ motor_power|default(0) }} kW</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded bg-light">
+                            <small class="text-muted d-block">راندمان در نقطه:</small>
+                            <span class="fw-bold h5">{{ pump_efficiency|default(0)|round(1) }}%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="alert alert-success py-5 mb-4 shadow-sm">
-                <h4 class="mb-2">سایز کابل پیشنهادی (سطح مقطع):</h4>
-                <div class="display-1 fw-bold text-dark">{{ session.get('selected_cable') }} <small class="h3 text-muted">mm²</small></div>
-                <p class="mt-3 mb-0 fw-bold">عدد محاسباتی دقیق: {{ session.get('calc_area') }} mm²</p>
+            {% if is_advanced %}
+            <div class="mb-5">
+                <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-reception-4 me-2"></i>جزئیات لوله‌کشی و اتصالات</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>نوع قطعه/لوله</th>
+                                <th>سایز</th>
+                                <th>تعداد/طول</th>
+                                <th>افت (متر)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in fittings %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.size }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.loss|round(2) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3" class="text-start">مجموع افت اصطکاکی:</th>
+                                <th class="text-danger">{{ total_pipe_loss|round(2) }} متر</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+
+
+            <div class="mb-4">
+                <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-lightning-charge me-2"></i>مشخصات کابل برق</h5>
+                <div class="alert alert-success d-flex align-items-center justify-content-between p-4">
+                    <div>
+                        <h4 class="mb-1">سایز کابل پیشنهادی:</h4>
+                        <div class="display-4 fw-bold">{{ selected_cable }} <small class="h4">mm²</small></div>
+                    </div>
+                    <div class="text-start">
+                        <p class="mb-1">
+                            <strong>طول کل:</strong> {{ total_length|default(0)|round(1) }} متر
+                        </p>
+                        <p class="mb-0"><strong>راه اندازی:</strong> {{ start_method }}</p>
+                    </div>
+                </div>
             </div>
 
-
-            <div class="p-2 border rounded bg-light mb-4">
-                <p class="small text-muted mb-0">
-                    <strong>جزئیات محاسبه:</strong> فاصله از چاه ({{ session.get('panel_distance') }}متر) + عمق نصب ({{ session.get('well_head_debug') }}متر)
-                </p>
-            </div>
-
-            <div class="d-print-none mt-5 d-flex justify-content-center gap-3">
-                <a href="{{ previous_step }}" class="btn btn-outline-secondary btn-lg px-4">
-                    <i class="bi bi-arrow-right me-2"></i> اصلاح کابل
+            <div class="d-print-none d-flex justify-content-center gap-3 mt-5">
+                {% if not is_pdf %}
+                <a href="{{ url_for('download_report') }}" class="btn btn-success btn-lg px-5 shadow fw-bold">
+                    <i class="bi bi-file-earmark-pdf-fill me-2"></i> دریافت فایل PDF گزارش
                 </a>
-                <button onclick="window.print()" class="btn btn-dark btn-lg px-4">
-                    <i class="bi bi-printer me-2"></i> چاپ گزارش
-                </button>
-                <a href="{{ url_for('welcome') }}" class="btn btn-primary btn-lg px-4">
-                    <i class="bi bi-house me-2"></i> شروع مجدد
-                </a>
+                <a href="{{ url_for('welcome') }}" class="btn btn-outline-primary btn-lg px-4">شروع مجدد</a>
+                {% endif %}
             </div>
+
         </div>
     </div>
 </main>

@@ -18,7 +18,8 @@ import pdfkit
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-change-me')
-
+PATH_WKHTMLTOPDF = r'D:\wkhtmltopdf\bin\wkhtmltopdf.exe'
+PDF_CONFIG = pdfkit.configuration(wkhtmltopdf=PATH_WKHTMLTOPDF)
 
 # --- HELPER FUNCTIONS ---
 
@@ -145,6 +146,7 @@ def step2():
                 segs[parts[1]][parts[0]] = v
 
         segments = []
+        fittings_data = []  # Data specifically formatted for the Final Report
         total_pipe_head_loss = 0
         flow_m3h = session.get('flow', 0)
         q_m3s = flow_m3h / 3600.0 if flow_m3h else 0
@@ -154,20 +156,21 @@ def step2():
             L = _to_float(s.get('length') or 0)
             D_mm = _to_float(s.get('diameter') or 0)
             Z = _to_float(s.get('height') or 0)
-
-            # C Value: 140 for PE/Poly, 100 for Steel/Metal
             material_name = str(s.get('material', ''))
+
+            # C Value selection logic
             C = 140 if "پلی" in material_name else 100
 
-            # Hazen-Williams Formula
+            # Hazen-Williams calculation
             row_hf = 0
             if L > 0 and D_mm > 0 and q_m3s > 0:
                 D_m = D_mm / 1000.0
                 row_hf = (10.67 * L * (q_m3s ** 1.852)) / ((C ** 1.852) * (D_m ** 4.871))
 
-            total_row_head = row_hf + Z
-            total_pipe_head_loss += total_row_head
+            row_total = row_hf + Z
+            total_pipe_head_loss += row_total
 
+            # For internal logic
             segments.append({
                 'length': L,
                 'diameter': D_mm,
@@ -175,9 +178,34 @@ def step2():
                 'material': material_name
             })
 
+            # NEW: Data for Final Report (Advanced Mode)
+            fittings_data.append({
+                'name': material_name,
+                'size': f"{D_mm} mm",
+                'quantity': f"{L} m",
+                'z_height': Z,
+                'loss': round(row_hf, 2)
+            })
+
+        # Save to session
         session['segments'] = segments
+        session['fittings_data'] = fittings_data  # Used in results.html
         session['total_pipe_head'] = total_pipe_head_loss
-        session['total_other_head'] = _to_float(request.form.get("total_other_head"))
+
+        # Save "Other" losses (Valves, etc)
+        other_loss = _to_float(request.form.get("total_other_head"))
+        session['total_other_head'] = other_loss
+
+        # Add a record for other losses in the report data if it exists
+        if other_loss > 0:
+            session['fittings_data'].append({
+                'name': 'سایر اتصالات و افت‌ها',
+                'size': '-',
+                'quantity': '-',
+                'z_height': '-',
+                'loss': round(other_loss, 2)
+            })
+
         return redirect(url_for("step_design"))
 
     # GET Request: Load Pipe Data for Dropdowns
@@ -186,8 +214,6 @@ def step2():
     try:
         if os.path.exists(file_path):
             df_mats = pd.read_excel(file_path, sheet_name='Sheet1')
-
-            # Map columns for JS compatibility
             df_mats = df_mats.rename(columns={
                 'Material': 'material_group',
                 'Diameter': 'size_label',
@@ -197,7 +223,6 @@ def step2():
             })
             if 'hydraulic_d' not in df_mats.columns:
                 df_mats['hydraulic_d'] = df_mats['inner_d']
-
             df_mats = df_mats.fillna(0)
             materials_list = df_mats.to_dict(orient='records')
     except Exception as e:
@@ -428,17 +453,78 @@ def step_cable():
                            previous_step=url_for('match_page'))
 
 
-@app.route("/result")
+@app.route('/result')
 def result():
-    # Pass necessary variables to template
-    return render_template("results.html",
-                           previous_step=url_for('step_cable'),
-                           flow=session.get("final_q"),
-                           depth=session.get("final_h"),
-                           pump_model=session.get("pump_model"),
-                           pump_power=session.get("motor_power"),
-                           # Use 'selected_cable' or 'cable_section' depending on your template
-                           cable_info=session.get("selected_cable"))
+    # Detect mode based on whether fittings exist in session
+    is_advanced = session.get('fittings_data') is not None
+
+    return render_template(
+        'results.html',
+        is_pdf=False,
+        is_advanced=session.get('fittings_data') is not None,
+        pump_model=session.get('selected_model', '---'),
+        motor_power=session.get('motor_power', 0),
+        pump_efficiency=session.get('pump_efficiency', 0),
+        fittings=session.get('fittings_data', []),
+        total_pipe_loss=session.get('total_pipe_loss', 0),
+        selected_cable=session.get('selected_cable', '---'),
+        total_length=session.get('total_l_calc', 0),
+        start_method=session.get('start_method', '---'),
+        calc_area=session.get('calc_area', 0)
+    )
+
+
+@app.route('/download_report')
+def download_report():
+    # MUST use the exact same variable names as the result route above
+    html = render_template(
+        'results.html',
+        is_pdf=True,
+        is_advanced=session.get('fittings_data') is not None,
+        pump_model=session.get('selected_model', '---'),
+        motor_power=session.get('motor_power', 0),
+        pump_efficiency=session.get('pump_efficiency', 0),
+        fittings=session.get('fittings_data', []),
+        total_pipe_loss=session.get('total_pipe_loss', 0),
+        selected_cable=session.get('selected_cable', '---'),
+        total_length=session.get('total_l_calc', 0),
+        start_method=session.get('start_method', '---'),
+        calc_area=session.get('calc_area', 0)
+    )
+
+    # ... your existing options and pdfkit code ...
+
+    # 2. Define the rendering options
+    options = {
+        'page-size': 'A4',
+        'encoding': "UTF-8",
+        'margin-top': '10mm',
+        'margin-bottom': '10mm',
+        'margin-left': '10mm',
+        'margin-right': '10mm',
+        'no-outline': None,
+        'quiet': ''
+    }
+
+    try:
+        # 3. Use the global PDF_CONFIG and the local variables defined above
+        pdf = pdfkit.from_string(
+            html,
+            False,
+            options=options,
+            configuration=PDF_CONFIG
+        )
+
+        # 4. Prepare the response
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'attachment; filename=Technical_Report.pdf'
+
+        return response
+
+    except Exception as e:
+        # This will help you debug if wkhtmltopdf fails
+        return f"خطا در تولید فایل پی‌دی‌اف: {str(e)}", 500
 
 
 if __name__ == "__main__":

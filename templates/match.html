@@ -132,8 +132,7 @@
     const candidates = data.candidates || [];
 
     document.getElementById('disp-q').innerText = flow + ' m³/h';
-    document.getElementById('disp-h').innerText = reqH + ' m';
-
+    document.getElementById('disp-h').innerText = parseFloat(reqH.toFixed(1)) + ' m';
     const hDatasets = [];
     const eDatasets = [];
 
