@@ -4,6 +4,7 @@ import io
 import os
 import math
 import datetime
+import platform  # Added for OS detection
 from collections import defaultdict
 
 import numpy as np
@@ -18,8 +19,73 @@ import pdfkit
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-change-me')
-PATH_WKHTMLTOPDF = r'D:\wkhtmltopdf\bin\wkhtmltopdf.exe'
-PDF_CONFIG = pdfkit.configuration(wkhtmltopdf=PATH_WKHTMLTOPDF)
+
+
+# --- CONFIGURATION & GLOBAL DATA LOADING ---
+
+# 1. Cross-Platform PDF Configuration
+def get_pdf_config():
+    """
+    Detects OS and returns the correct wkhtmltopdf configuration.
+    """
+    if platform.system() == "Windows":
+        # Default dev path, but prefer environment variable if set
+        path = os.environ.get('WKHTMLTOPDF_PATH', r'D:\wkhtmltopdf\bin\wkhtmltopdf.exe')
+    else:
+        # Standard Linux/Production path
+        path = os.environ.get('WKHTMLTOPDF_PATH', '/usr/bin/wkhtmltopdf')
+
+    # Check if file exists to prevent hard crashes
+    if not os.path.exists(path):
+        print(f"WARNING: wkhtmltopdf not found at {path}. PDF generation will fail.")
+        return None
+
+    return pdfkit.configuration(wkhtmltopdf=path)
+
+
+PDF_CONFIG = get_pdf_config()
+
+# 2. Efficient Data Caching (Load Once at Startup)
+PIPES_DB = pd.DataFrame()
+PUMPS_DB = pd.DataFrame()
+
+
+def load_data():
+    """
+    Loads Excel files into global variables once when the app starts.
+    """
+    global PIPES_DB, PUMPS_DB
+
+    # Load Pipe Data
+    pipe_path = 'data/pipe_Data.xlsx'
+    if os.path.exists(pipe_path):
+        try:
+            PIPES_DB = pd.read_excel(pipe_path, sheet_name='Sheet1')
+            print(f"SUCCESS: Loaded {len(PIPES_DB)} pipe records.")
+        except Exception as e:
+            print(f"ERROR: Failed to load pipe data: {e}")
+    else:
+        print(f"WARNING: Pipe database not found at {pipe_path}")
+
+    # Load Pump/Catalog Data
+    cat_path = 'data/cat_Data.xlsx'
+    if os.path.exists(cat_path):
+        try:
+            # Header=1 implies the first row is metadata/empty, and actual headers are on row 2
+            df = pd.read_excel(cat_path, header=1)
+            # Normalize columns to lowercase for consistent access
+            df.columns = [str(c).strip().lower() for c in df.columns]
+            PUMPS_DB = df
+            print(f"SUCCESS: Loaded {len(PUMPS_DB)} pump records.")
+        except Exception as e:
+            print(f"ERROR: Failed to load catalog data: {e}")
+    else:
+        print(f"WARNING: Pump database not found at {cat_path}")
+
+
+# Execute loading immediately
+load_data()
+
 
 # --- HELPER FUNCTIONS ---
 
@@ -59,6 +125,8 @@ def parse_list(val):
     """
     if pd.isna(val) or val == '': return None
     try:
+        # Check if it's already a list (if pandas inferred it)
+        if isinstance(val, list): return val
         return ast.literal_eval(str(val))
     except:
         return None
@@ -138,14 +206,8 @@ def step1():
 
 @app.route("/step2", methods=["GET", "POST"])
 def step2():
-    # Load Pipe Data for both GET (dropdowns) and POST (lookup fix)
-    file_path = 'data/pipe_Data.xlsx'  # Ensure this path is correct
-    df_mats = pd.DataFrame()
-    try:
-        if os.path.exists(file_path):
-            df_mats = pd.read_excel(file_path, sheet_name='Sheet1')
-    except Exception as e:
-        print(f"Database Error: {e}")
+    # Use the globally loaded DataFrame
+    global PIPES_DB
 
     if request.method == "POST":
         segs = defaultdict(dict)
@@ -173,10 +235,11 @@ def step2():
             display_size = f"{D_mm} mm"  # Fallback
             C = 100  # Default C
 
-            # Lookup actual labels from the Excel DataFrame
-            if not df_mats.empty and mat_id:
+            # Lookup actual labels from the Cached DataFrame
+            if not PIPES_DB.empty and mat_id:
                 try:
-                    match = df_mats[df_mats['ID'] == int(mat_id)].iloc[0]
+                    # Ensure strict type matching for ID
+                    match = PIPES_DB[PIPES_DB['ID'] == int(mat_id)].iloc[0]
                     display_name = match['Material']  # e.g., 'فلزی'
                     display_size = match['Diameter']  # e.g., '4 اینچ'
                     C = match['C_Coef']  # Accurate C from Excel
@@ -193,7 +256,6 @@ def step2():
             row_total = row_hf + Z
             total_pipe_head_loss += row_total
 
-            # For internal logic (keeping IDs)
             segments.append({
                 'length': L,
                 'diameter': D_mm,
@@ -201,21 +263,18 @@ def step2():
                 'material': mat_id
             })
 
-            # FIX: Use the looked-up display values for the Report
             fittings_data.append({
-                'name': display_name,  # Shows 'فلزی'
-                'size': display_size,  # Shows '4 اینچ'
+                'name': display_name,
+                'size': display_size,
                 'quantity': f"{L} m",
                 'z_height': Z,
                 'loss': round(row_hf, 2)
             })
 
-        # Save to session
         session['segments'] = segments
         session['fittings_data'] = fittings_data
         session['total_pipe_head'] = total_pipe_head_loss
 
-        # Other losses logic
         other_loss = _to_float(request.form.get("total_other_head")) or 0
         session['total_other_head'] = other_loss
         if other_loss > 0:
@@ -232,33 +291,25 @@ def step2():
         return redirect(url_for("step_design"))
 
     # GET Request Logic (Dropdown population)
-    file_path = 'data/pipe_Data.xlsx'
     materials_list = []
-    try:
-        if os.path.exists(file_path):
-            # Read the excel
-            df_mats = pd.read_excel(file_path, sheet_name='Sheet1')
-
-            # CRITICAL: We must provide the exact keys the JavaScript expects
-            # based on your step2.html logic.
-            df_renamed = df_mats.rename(columns={
+    if not PIPES_DB.empty:
+        try:
+            # Prepare data for JS
+            df_renamed = PIPES_DB.rename(columns={
                 'Material': 'material_group',
                 'Diameter': 'size_label',
                 'ID': 'index',
                 'Inner_D': 'inner_d',
                 'C_Coef': 'C'
             })
-
-            # Fill NaN values to prevent JS errors
             df_renamed = df_renamed.fillna(0)
             materials_list = df_renamed.to_dict(orient='records')
-
-    except Exception as e:
-        print(f"Database Error: {e}")
+        except Exception as e:
+            print(f"Data Prep Error: {e}")
 
     return render_template(
         "step2.html",
-        materials=materials_list,  # This list is now correctly formatted for JS
+        materials=materials_list,
         flow=session.get('flow', 0),
         install_depth=session.get('install_depth', 0),
         segments=session.get('segments', [])
@@ -267,23 +318,17 @@ def step2():
 
 @app.route("/step_design", methods=["GET", "POST"])
 def step_design():
-    # Only accessed in Advanced Mode
     flow = session.get("flow")
     if not flow:
         return redirect(url_for("welcome"))
 
-    # Calculate Total Head
     pipe_head = _to_float(session.get("total_pipe_head") or 0)
     other_head = _to_float(session.get("total_other_head") or 0)
     total_h = pipe_head + other_head
 
-    # Capture selected model if passed via URL (persistence)
     selected_model_name = request.args.get("model")
     if selected_model_name:
         session['pump_model'] = selected_model_name
-
-    pump_details = {}
-    # (Optional: fetch pump details here if needed for display on this page)
 
     if request.method == "POST":
         session.update({'final_q': flow, 'final_h': total_h})
@@ -292,47 +337,40 @@ def step_design():
     return render_template("step_design.html",
                            flow=flow,
                            head=round(total_h, 2),
-                           # Back button goes to Fittings page
                            previous_step=url_for('step2'))
 
 
 # --- MATCHING & API LOGIC ---
 
 def get_best_pumps(qr, hr):
-    file_path = 'data/cat_Data.xlsx'
-    if not os.path.exists(file_path): return [], "فایل دیتابیس یافت نشد."
+    global PUMPS_DB
 
-    try:
-        df = pd.read_excel(file_path, header=1)  # Use header=1 based on previous context
-        # Normalize column names
-        df.columns = [str(c).strip().lower() for c in df.columns]
-    except Exception as e:
-        return [], f"خطا در خواندن اکسل: {str(e)}"
+    if PUMPS_DB.empty:
+        return [], "پایگاه داده پمپ‌ها بارگذاری نشده است."
 
     results = []
-    for _, row in df.iterrows():
+    # Iterate over the cached DataFrame
+    for _, row in PUMPS_DB.iterrows():
         try:
-            # Parse vectors using AST for safety
+            # Parse vectors
             f_vec = parse_list(row.get('flow_vector'))
             h_vec = parse_list(row.get('head_vector'))
             e_vec = parse_list(row.get('efficiency_vector'))
 
             if not f_vec or not h_vec: continue
 
-            # Filter 1: Is flow within range?
+            # Filter 1: Range check
             if not (min(f_vec) <= qr <= max(f_vec)): continue
 
-            # Filter 2: Calculate Head at requested Flow
-            # (Assuming polynomial coefficients exist in DB, or use Interpolation)
+            # Filter 2: Calculate Head
             h_coeffs = parse_list(row.get('head_flow_poly'))
             if not h_coeffs:
-                # Fallback: Simple interpolation if no poly
                 calc_h = np.interp(qr, f_vec, h_vec)
             else:
                 h_func = np.poly1d(h_coeffs)
                 calc_h = h_func(qr)
 
-            # Tolerance check (e.g., pump head must be at least required head - 5m)
+            # Tolerance check (head must be at least required head - 5m)
             if calc_h >= hr - 5:
                 e_coeffs = parse_list(row.get('efficiency_flow_poly'))
                 calc_eff = 0
@@ -348,7 +386,6 @@ def get_best_pumps(qr, hr):
                     'flow_vec': f_vec,
                     'head_vec': h_vec,
                     'eff_vec': e_vec,
-                    # Store raw model for step_cable lookup
                     'raw_model': row.get('shoowing_name')
                 })
         except Exception as e:
@@ -363,20 +400,16 @@ def get_best_pumps(qr, hr):
 def match_page():
     if not session.get('final_q'): return redirect(url_for("welcome"))
 
-    # NAVIGATION LOGIC: Where should the Back button go?
     if session.get('mode') == 'advanced':
         prev_url = url_for('step_design')
     else:
-        prev_url = url_for('simple_input')  # or init_simple
+        prev_url = url_for('simple_input')
 
     return render_template("match.html", previous_step=prev_url)
 
 
 @app.route('/api/match')
 def api_match():
-    """
-    API Endpoint used by JavaScript in match.html to fetch charts
-    """
     qr = _to_float(session.get('final_q'))
     hr = _to_float(session.get('final_h'))
 
@@ -385,15 +418,14 @@ def api_match():
 
     formatted = []
     for p in pumps:
-        # Create points for Chart.js
         h_pts = [{"x": f, "y": h} for f, h in zip(p['flow_vec'], p['head_vec'])]
         e_pts = [{"x": f, "y": e} for f, e in zip(p['flow_vec'], p['eff_vec'])]
 
         formatted.append({
             "model": p['name'],
             "power": p['motor_power'],
-            "predicted_head": p['predicted_head'] if 'predicted_head' in p else p['calc_head'],
-            "efficiency": p['efficiency'] if 'efficiency' in p else p['calc_eff'],
+            "predicted_head": p['calc_head'],
+            "efficiency": p['calc_eff'],
             "h_points": h_pts,
             "e_points": e_pts,
             "q_min": min(p['flow_vec']) - 5,
@@ -403,43 +435,48 @@ def api_match():
     return jsonify({"flow": qr, "required_head": hr, "candidates": formatted})
 
 
-# --- CABLE CALCULATION (CRITICAL FIXES) ---
+# --- CABLE CALCULATION ---
 
 @app.route("/step_cable", methods=["GET", "POST"])
 def step_cable():
-    # 1. Capture model from URL or Session
+    global PUMPS_DB
+
     selected_model = request.args.get("model") or session.get("pump_model")
     if selected_model:
         session['pump_model'] = selected_model
 
-    # 2. Fetch Pump Details
+    # Use cached DB for lookup
     pump_details = {}
-    try:
-        df_cat = pd.read_excel('data/cat_Data.xlsx', header=1)
-        df_cat['Shoowing_name'] = df_cat['Shoowing_name'].astype(str).str.strip()
-        match = df_cat[df_cat['Shoowing_name'] == str(selected_model).strip()]
+    if not PUMPS_DB.empty:
+        try:
+            # Clean column for reliable matching
+            # Note: We normalized columns to lower case in load_data()
+            # so we access 'shoowing_name' (lowercase)
 
-        if not match.empty:
-            row = match.iloc[0]
-            pump_details = {
-                'showing_name': row.get('Shoowing_name'),
-                'motor_power': row.get('Motor_Power'),
-                'current': _to_float(row.get('current')),
-                'pump_model': int(row.get('Pump_Model')) if pd.notnull(row.get('Pump_Model')) else '---',
-                'pump_no': int(row.get('Pump_no')) if pd.notnull(row.get('Pump_no')) else 0,
-                'motor_model': row.get('Motor_Model')
-            }
-            session.update(pump_details)
-    except Exception as e:
-        print(f"Excel Error: {e}")
+            # Ensure the lookup value is a string and stripped
+            lookup_val = str(selected_model).strip()
+
+            # Filter
+            match = PUMPS_DB[PUMPS_DB['shoowing_name'].astype(str).str.strip() == lookup_val]
+
+            if not match.empty:
+                row = match.iloc[0]
+                pump_details = {
+                    'showing_name': row.get('shoowing_name'),
+                    'motor_power': row.get('motor_power'),
+                    'current': _to_float(row.get('current')),
+                    'pump_model': int(row.get('pump_model')) if pd.notnull(row.get('pump_model')) else '---',
+                    'pump_no': int(row.get('pump_no')) if pd.notnull(row.get('pump_no')) else 0,
+                    'motor_model': row.get('motor_model')
+                }
+                session.update(pump_details)
+        except Exception as e:
+            print(f"Data Lookup Error: {e}")
 
     if request.method == "POST":
         panel_dist = _to_float(request.form.get("panel_distance") or 0)
         start_method = request.form.get("start_method")
 
-        # --- LOGIC FIX: Simple vs Advanced Head ---
-        # If 'total_pipe_head' is missing or 0, we are in Simple Path.
-        # We ignore session['final_h'] (which might contain the '100' default) and use 0.
         if session.get("total_pipe_head") and _to_float(session.get("total_pipe_head")) > 0:
             well_head = _to_float(session.get("final_h") or 0)
         else:
@@ -448,15 +485,13 @@ def step_cable():
         total_l = panel_dist + well_head
         current = _to_float(session.get('current') or 0)
 
-        # --- FORMULA ---
-        # Area = L * I * 0.00278...
-        calc_area = total_l * current * 0.0027803571429
+        # Cable Formula Constant
+        CABLE_FACTOR = 0.0027803571429
+        calc_area = total_l * current * CABLE_FACTOR
 
-        # 'دو ضرب' Multiplier
         if start_method == 'دو ضرب':
             calc_area *= 0.58
 
-        # Vector Match
         vector = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400]
         selected_cable = "یافت نشد"
         for size in vector:
@@ -470,12 +505,11 @@ def step_cable():
             'selected_cable': selected_cable,
             'calc_area': round(calc_area, 3),
             'total_l_calc': total_l,
-            'has_cable': True,  # Flag for result page
-            'cable_section': selected_cable  # Consistent naming
+            'has_cable': True,
+            'cable_section': selected_cable
         })
         return redirect(url_for("result"))
 
-    # Navigation: Back always goes to Match Page
     return render_template("step_cable.html",
                            pump=pump_details,
                            previous_step=url_for('match_page'))
@@ -487,7 +521,6 @@ def select_pump():
     if not data:
         return jsonify({"error": "No data received"}), 400
 
-    # Save the chosen pump details to the session
     session['selected_model'] = data.get('model')
     session['motor_power'] = data.get('power')
     session['pump_efficiency'] = data.get('efficiency')
@@ -497,23 +530,10 @@ def select_pump():
 
 @app.route('/result')
 def result():
-    # --- DEBUGGING LOGS ---
-    print("\n" + "=" * 50)
-    print("DEBUG: LOADING RESULTS PAGE")
-
-    # Check what is actually in the session
     fittings_list = session.get('fittings_data', [])
     total_loss = session.get('total_pipe_head', 0)
     pump = session.get('selected_model', '---')
 
-    print(f"1. Pump Model Found: {pump}")
-    print(f"2. Total Pipe Loss Found: {total_loss}")
-    print(f"3. Fittings Data Count: {len(fittings_list)}")
-    print(f"4. Full Fittings Content: {fittings_list}")
-    print("=" * 50 + "\n")
-    # --- END DEBUGGING ---
-
-    # We must pass the data using names that MATCH your HTML template
     return render_template(
         'results.html',
         is_pdf=False,
@@ -521,13 +541,8 @@ def result():
         pump_model=pump,
         motor_power=session.get('motor_power', 0),
         pump_efficiency=session.get('pump_efficiency', 0),
-
-        # IMPORTANT: result.html uses 'fittings', not 'fittings_data'
         fittings=fittings_list,
-
-        # IMPORTANT: result.html uses 'total_pipe_loss', not 'total_pipe_head'
         total_pipe_loss=total_loss,
-
         selected_cable=session.get('selected_cable', '---'),
         total_length=session.get('total_l_calc', 0),
         start_method=session.get('start_method', '---')
@@ -536,12 +551,13 @@ def result():
 
 @app.route('/download_report')
 def download_report():
-    def get_absolute_path(relative_path):
+    if PDF_CONFIG is None:
+        return "خطا: پیکربندی PDF یافت نشد. لطفاً نصب wkhtmltopdf را بررسی کنید.", 500
+
+    def get_absolute_path_pdf(relative_path):
         path = os.path.join(app.root_path, 'static', relative_path)
         return path.replace('\\', '/')
 
-    # ۱. استخراج دقیق مشخصات چاه از سشن (بر اساس اسامی مرحله ۱)
-    # این مقادیر مستقیماً در جدول Well Specs و تصویر شماتیک چاپ می‌شوند
     schematic_data = {
         'static_level': session.get('static_level', '---'),
         'dynamic_level': session.get('dynamic_level', '---'),
@@ -551,7 +567,6 @@ def download_report():
         'casing_width': 120
     }
 
-    # ۲. فرمت‌بندی لیست لوله‌ها برای جدول Piping
     raw_segments = session.get('fittings_data', [])
     formatted_segments = []
     for s in raw_segments:
@@ -562,31 +577,25 @@ def download_report():
             'loss': s.get('loss', 0)
         })
 
-    # ۳. تجمیع تمام داده‌ها (مطابق با متغیرهای فایل report_pdf.html)
     report_data = {
         'is_pdf': True,
-        'get_absolute_path': get_absolute_path,
-
-        # بخش ۱: نقطه کار
+        'get_absolute_path': get_absolute_path_pdf,
+        'date': datetime.datetime.now().strftime('%Y/%m/%d'),
         'flow': session.get('final_q', 0),
         'head': round(session.get('final_h', 0), 2) if session.get('final_h') else 0,
-
-        # بخش ۲: مشخصات چاه (Well Specs)
+        'static_level': session.get('static_level', '---'),
+        'dynamic_level': session.get('dynamic_level', '---'),
+        'install_depth': session.get('install_depth', '---'),
+        'diameter_inch': round(session.get('diameter', 0) / 25.4, 1) if session.get('diameter') else '---',
         'schematic': schematic_data,
-        'well_diameter': session.get('diameter', '---'),  # این مقدار برای Dwell استفاده می‌شود
-
-        # بخش ۳: تجهیزات
+        'well_diameter': session.get('diameter', '---'),
         'pump_model': session.get('selected_model', '---'),
         'pump_power': session.get('motor_power', 0),
-
-        # بخش ۴: کابل
         'cable': {
             'length': round(session.get('total_l_calc', 0), 1) if session.get('total_l_calc') else 0,
             'section': session.get('selected_cable', '---'),
-            'type': 'round' if session.get('start_method') != 'دو ضرب' else 'flat'
+            'type': 'flat' if session.get('start_method') == 'دو ضرب' else 'round'
         },
-
-        # بخش ۵: لوله‌کشی
         'segments': formatted_segments
     }
 
@@ -616,7 +625,6 @@ def download_report():
     except Exception as e:
         print(f"PDF Error: {str(e)}")
         return f"خطا در تولید فایل PDF: {str(e)}", 500
-
 
 
 if __name__ == "__main__":
