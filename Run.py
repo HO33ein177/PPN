@@ -268,7 +268,7 @@ def step2():
                 'size': display_size,
                 'quantity': f"{L} m",
                 'z_height': Z,
-                'loss': round(row_hf, 2)
+                'loss': round(row_total, 2)
             })
 
         session['segments'] = segments
@@ -322,10 +322,11 @@ def step_design():
     if not flow:
         return redirect(url_for("welcome"))
 
-    pipe_head = _to_float(session.get("total_pipe_head") or 0)
-    other_head = _to_float(session.get("total_other_head") or 0)
-    total_h = pipe_head + other_head
+    # FIX: total_pipe_head already includes 'other_head' from step2 logic.
+    # We should NOT add it again here.
+    total_h = _to_float(session.get("total_pipe_head") or 0)
 
+    # Capture selected model if passed via URL (persistence)
     selected_model_name = request.args.get("model")
     if selected_model_name:
         session['pump_model'] = selected_model_name
@@ -337,6 +338,7 @@ def step_design():
     return render_template("step_design.html",
                            flow=flow,
                            head=round(total_h, 2),
+                           # Back button goes to Fittings page
                            previous_step=url_for('step2'))
 
 

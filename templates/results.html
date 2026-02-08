@@ -56,14 +56,14 @@
                     <td class="fw-bold">{{ item.name }}</td>
                     <td dir="ltr" class="text-center">{{ item.size }}</td>
                     <td dir="ltr" class="text-center">{{ item.quantity }}</td>
-                    <td dir="ltr" class="text-center text-danger fw-bold">{{ item.loss|default(0)|round(2) }}</td>
+                    <td dir="ltr" class="text-center  fw-bold">{{ item.loss|default(0)|round(2) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             <tfoot class="table-light">
                 <tr class="fw-bold">
                     <td colspan="3" style="text-align: left;">مجموع افت هیدرولیکی سیستم:</td>
-                    <td dir="ltr" class="text-center text-danger h5 mb-0">{{ total_pipe_loss|default(0)|round(2) }} م</td>
+                    <td dir="ltr" class="text-center  h5 mb-0">{{ total_pipe_loss|default(0)|round(2) }} م</td>
                 </tr>
             </tfoot>
         </table>
