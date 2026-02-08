@@ -4,7 +4,7 @@ import io
 import os
 import math
 import datetime
-import platform  # Added for OS detection
+import platform
 from collections import defaultdict
 
 import numpy as np
@@ -13,7 +13,7 @@ import matplotlib
 
 # Set backend to Agg to prevent GUI errors on server
 matplotlib.use('Agg')
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from flask import Flask, request, redirect, url_for, render_template, jsonify, session, make_response
 import pdfkit
 
@@ -552,21 +552,109 @@ def result():
 @app.route('/download_report')
 def download_report():
     if PDF_CONFIG is None:
-        return "خطا: پیکربندی PDF یافت نشد. لطفاً نصب wkhtmltopdf را بررسی کنید.", 500
+        return "خطا: پیکربندی PDF یافت نشد.", 500
 
+    # 1. Helper for Static Files
     def get_absolute_path_pdf(relative_path):
         path = os.path.join(app.root_path, 'static', relative_path)
         return path.replace('\\', '/')
 
+    # 2. Retrieve Data from Session
+    static_lvl = _to_float(session.get('static_level'))
+    dynamic_lvl = _to_float(session.get('dynamic_level'))
+    install_depth = _to_float(session.get('install_depth'))
+
+    # --- FIX 1: CALCULATE SVG COORDINATES FOR WELL SCHEMATIC ---
+    # We map the depth (meters) to pixels (0 to 600 height)
+    # Ensure there's at least some depth to avoid division by zero
+    max_val_in_data = max(install_depth, dynamic_lvl, static_lvl)
+    max_depth = max(max_val_in_data, 10) * 1.3
+
+    # Helper to convert meters to pixels relative to SVG top (50px buffer)
+    def m_to_px(m):
+        if max_depth <= 0: return 50
+        return 50 + (m / max_depth * 500)  # 500 is available visual height
+
     schematic_data = {
-        'static_level': session.get('static_level', '---'),
-        'dynamic_level': session.get('dynamic_level', '---'),
-        'install_depth': session.get('install_depth', '---'),
-        'dynamic_val': round(session.get('final_h', 0), 1) if session.get('final_h') else 0,
+        # Values for display text
+        'static_val': static_lvl,
+        'dynamic_val': dynamic_lvl,
+        'install_val': install_depth,
+
+        # Coordinates for drawing lines in SVG
+        'static_y': m_to_px(static_lvl),
+        'dynamic_y': m_to_px(dynamic_lvl),
+        'pump_y': m_to_px(install_depth),
+        'water_y': m_to_px(dynamic_lvl),
+        'water_height': 600 - m_to_px(dynamic_lvl),
+
+        # Casing widths (visuals)
         'casing_x': 100,
-        'casing_width': 120
+        'casing_width': 100,
+        'void_x': 105,
+        'void_width': 90
     }
 
+    # --- FIX 2: GENERATE CHART SERVER-SIDE (MATPLOTLIB) ---
+    chart_b64 = None
+    selected_model = session.get('selected_model')
+
+    # Find the pump data again to plot curves
+    pump_row = None
+    if not PUMPS_DB.empty and selected_model:
+        # Strict string matching
+        match = PUMPS_DB[PUMPS_DB['shoowing_name'].astype(str).str.strip() == str(selected_model).strip()]
+        if not match.empty:
+            pump_row = match.iloc[0]
+
+    if pump_row is not None:
+        try:
+            # Parse vectors
+            f_vec = parse_list(pump_row.get('flow_vector'))
+            h_vec = parse_list(pump_row.get('head_vector'))
+            e_vec = parse_list(pump_row.get('efficiency_vector'))
+
+            # System Point
+            user_q = _to_float(session.get('final_q'))
+            user_h = _to_float(session.get('final_h'))
+
+            if f_vec and h_vec:
+                # Create Plot
+                plt.figure(figsize=(7, 4))
+
+                # Plot H-Q Curve (Left Axis)
+                ax1 = plt.gca()
+                ax1.plot(f_vec, h_vec, color='#0d6efd', linewidth=2, label='Head (m)')
+                ax1.set_xlabel('Flow (m³/h)', fontweight='bold')
+                ax1.set_ylabel('Head (m)', color='#0d6efd', fontweight='bold')
+                ax1.tick_params(axis='y', labelcolor='#0d6efd')
+                ax1.grid(True, alpha=0.3)
+
+                # Plot Operating Point
+                ax1.scatter([user_q], [user_h], color='red', s=100, zorder=5, label='Design Point')
+
+                # Plot Efficiency (Right Axis)
+                if e_vec:
+                    ax2 = ax1.twinx()
+                    ax2.plot(f_vec, e_vec, color='#198754', linestyle='--', linewidth=2, label='Eff (%)')
+                    ax2.set_ylabel('Efficiency (%)', color='#198754', fontweight='bold')
+                    ax2.tick_params(axis='y', labelcolor='#198754')
+                    ax2.set_ylim(0, 100)
+
+                # Title
+                plt.title(f'Performance Curve: {selected_model}', fontname='DejaVu Sans', fontsize=12)
+                plt.tight_layout()
+
+                # Save to Buffer
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', dpi=100)
+                buf.seek(0)
+                chart_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                plt.close()  # Close plot to free memory
+        except Exception as e:
+            print(f"Chart Generation Error: {e}")
+
+    # 3. Prepare Segments for Table
     raw_segments = session.get('fittings_data', [])
     formatted_segments = []
     for s in raw_segments:
@@ -577,20 +665,26 @@ def download_report():
             'loss': s.get('loss', 0)
         })
 
+    # 4. Context for Template
     report_data = {
         'is_pdf': True,
         'get_absolute_path': get_absolute_path_pdf,
         'date': datetime.datetime.now().strftime('%Y/%m/%d'),
+
         'flow': session.get('final_q', 0),
         'head': round(session.get('final_h', 0), 2) if session.get('final_h') else 0,
-        'static_level': session.get('static_level', '---'),
-        'dynamic_level': session.get('dynamic_level', '---'),
-        'install_depth': session.get('install_depth', '---'),
+
+        'static_level': static_lvl,
+        'dynamic_level': dynamic_lvl,
+        'install_depth': install_depth,
         'diameter_inch': round(session.get('diameter', 0) / 25.4, 1) if session.get('diameter') else '---',
+
         'schematic': schematic_data,
-        'well_diameter': session.get('diameter', '---'),
+        'curve_image': chart_b64,  # Pass the generated image
+
         'pump_model': session.get('selected_model', '---'),
         'pump_power': session.get('motor_power', 0),
+
         'cable': {
             'length': round(session.get('total_l_calc', 0), 1) if session.get('total_l_calc') else 0,
             'section': session.get('selected_cable', '---'),
@@ -614,17 +708,15 @@ def download_report():
         }
 
         pdf = pdfkit.from_string(html, False, options=options, configuration=PDF_CONFIG)
-
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
-        filename = f"Technical_Report_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
+        filename = f"Report_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
         response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-
         return response
 
     except Exception as e:
         print(f"PDF Error: {str(e)}")
-        return f"خطا در تولید فایل PDF: {str(e)}", 500
+        return f"PDF Error: {str(e)}", 500
 
 
 if __name__ == "__main__":

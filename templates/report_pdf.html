@@ -4,210 +4,130 @@
   <meta charset="UTF-8">
   <title>گزارش انتخاب پمپ</title>
   <style>
-    body {
-      font-family: 'Vazirmatn', Tahoma, sans-serif;
-      direction: rtl;
-      padding: 30px;
-      color: #333;
-    }
-    .header {
-      text-align: center;
-      border-bottom: 2px solid #1c4e80;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    .logo {
-      max-height: 80px;
-      margin-bottom: 10px;
-    }
-    h1 { color: #1c4e80; font-size: 24px; margin: 0; }
-    h2 { color: #1c4e80; font-size: 18px; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-top: 30px; }
+    body { font-family: 'Vazirmatn', Tahoma, sans-serif; direction: rtl; padding: 20px; color: #333; }
+    .header { text-align: center; border-bottom: 2px solid #1c4e80; padding-bottom: 10px; margin-bottom: 20px; }
+    .logo { max-height: 70px; }
+    h1 { color: #1c4e80; font-size: 22px; margin: 5px 0; }
+    h2 { color: #1c4e80; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 20px; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    th, td {
-      border: 1px solid #eee;
-      padding: 8px 12px;
-      text-align: right;
-    }
-    th { background-color: #f8f9fa; color: #555; width: 45%; }
-
-    .highlight { color: #198754; font-weight: bold; }
-    .footer {
-      margin-top: 50px;
-      text-align: center;
-      font-size: 12px;
-      color: #777;
-      border-top: 1px solid #eee;
-      padding-top: 20px;
-    }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; }
+    th, td { border: 1px solid #eee; padding: 6px 10px; text-align: right; }
+    th { background-color: #f8f9fa; width: 40%; }
     .val-ltr { direction: ltr; display: inline-block; font-weight: bold; }
 
-    /* Symbol Style */
-    .sym {
-      font-family: serif;
-      font-style: italic;
-      color: #666;
-      font-weight: normal;
-      margin-right: 5px;
-    }
+    .container { display: table; width: 100%; }
+    .col-left { display: table-cell; width: 45%; vertical-align: top; padding-left: 20px; }
+    .col-right { display: table-cell; width: 55%; vertical-align: top; }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <img src="{{ get_absolute_path('logo.png') }}" class="logo" alt="Pars Pump Naseri">
+    <img src="{{ get_absolute_path('logo.png') }}" class="logo">
     <h1>گزارش فنی انتخاب الکتروپمپ</h1>
-    <p>تاریخ گزارش: {{ date }}</p>
+    <p style="font-size:12px; color:#666;">تاریخ: <span class="val-ltr">{{ date }}</span></p>
   </div>
 
-  <h2>۱. نقطه کار سیستم (Design Point)</h2>
+  <h2>۱. خلاصه وضعیت سیستم</h2>
   <table>
     <tr>
-      <th>دبی مورد نیاز <span class="sym">(Qr)</span></th>
+      <th>دبی سیستم (Q)</th>
       <td><span class="val-ltr">{{ flow }} m³/h</span></td>
-    </tr>
-    <tr>
-      <th>هد کل مورد نیاز <span class="sym">(Hr)</span></th>
+      <th>هد کل (H)</th>
       <td><span class="val-ltr">{{ head }} m</span></td>
     </tr>
-  </table>
-
-  <h2>۲. مشخصات چاه (Well Specs)</h2>
-  <table>
-    <tr>
-      <th>سطح استاتیک <span class="sym">(Hs)</span></th>
-      <td>{{ static_level }} متر</td>
-    </tr>
-    <tr>
-      <th>سطح دینامیک <span class="sym">(Hd)</span></th>
-      <td>{{ dynamic_level }} متر</td>
-    </tr>
-    <tr>
-      <th>عمق نصب پمپ <span class="sym">(Di)</span></th>
-      <td>{{ install_depth }} متر</td>
-    </tr>
-    <tr>
-      <th>قطر دهانه چاه <span class="sym">(D_well)</span></th>
-      <td><span class="val-ltr">{{ diameter_inch }} Inch</span></td>
-    </tr>
-  </table>
-
-  <div style="page-break-inside: avoid; margin-top: 30px; text-align: center; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-    <h3 style="margin-top:0; color:#555; font-size: 16px;">شماتیک فنی و موقعیت نصب</h3>
-
-    <svg width="400" height="600" viewBox="0 0 300 600" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-          <linearGradient id="groundGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#eee;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#ccc;stop-opacity:1" />
-          </linearGradient>
-          <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#e1f5fe;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#b3e5fc;stop-opacity:1" />
-          </linearGradient>
-      </defs>
-
-      <rect x="0" y="50" width="300" height="550" fill="url(#groundGrad)" />
-      <line x1="0" y1="50" x2="300" y2="50" stroke="#555" stroke-width="4" />
-
-      <rect x="{{ schematic.casing_x }}" y="50" width="{{ schematic.casing_width }}" height="550" fill="#fff" stroke="#555" stroke-width="1"/>
-      <rect x="{{ schematic.void_x }}" y="50" width="{{ schematic.void_width }}" height="550" fill="#333" />
-
-      <rect x="{{ schematic.void_x }}" y="{{ schematic.water_y }}" width="{{ schematic.void_width }}" height="{{ schematic.water_height }}" fill="url(#waterGrad)" />
-
-      <g transform="translate(0, {{ schematic.pump_y }})">
-        <rect x="145" y="-600" width="10" height="600" fill="#999" stroke="#555" stroke-width="1" />
-        <line x1="158" y1="-600" x2="158" y2="10" stroke="#000" stroke-width="2" />
-
-        <g>
-           <path d="M140,0 L160,0 L155,15 L145,15 Z" fill="#777" />
-           <rect x="135" y="15" width="30" height="50" rx="2" fill="#ccc" stroke="#555" />
-           <rect x="138" y="65" width="24" height="20" fill="#222" />
-           <rect x="135" y="85" width="30" height="60" rx="3" fill="#444" stroke="#222" />
-
-           <text x="175" y="60" font-family="serif" font-weight="bold" font-size="12" fill="#333">Di: {{ schematic.install_val }}m</text>
-           <line x1="165" y1="60" x2="173" y2="60" stroke="#555" stroke-width="1" />
-        </g>
-      </g>
-
-      <rect x="{{ schematic.casing_x - 10 }}" y="40" width="{{ schematic.casing_width + 20 }}" height="10" rx="2" fill="#555" />
-
-      <g transform="translate(0, {{ schematic.static_y }})">
-        <line x1="50" y1="0" x2="250" y2="0" stroke="#0d6efd" stroke-width="2" stroke-dasharray="5,3" />
-        <text x="45" y="-3" font-family="serif" font-weight="bold" font-size="12" fill="#0d6efd" text-anchor="end">Hs: {{ schematic.static_val }}m</text>
-      </g>
-
-      <g transform="translate(0, {{ schematic.dynamic_y }})">
-        <line x1="50" y1="0" x2="250" y2="0" stroke="#dc3545" stroke-width="2" stroke-dasharray="5,3" />
-        <text x="45" y="-3" font-family="serif" font-weight="bold" font-size="12" fill="#dc3545" text-anchor="end">Hd: {{ schematic.dynamic_val }}m</text>
-      </g>
-
-    </svg>
-  </div>
-
-  <h2>۳. تجهیزات انتخابی (Selected Equipment)</h2>
-  <table>
     <tr>
       <th>مدل پمپ</th>
-      <td class="highlight"><span class="val-ltr">{{ pump_model }}</span></td>
-    </tr>
-    <tr>
+      <td><span class="val-ltr">{{ pump_model }}</span></td>
       <th>توان موتور</th>
       <td><span class="val-ltr">{{ pump_power }} kW</span></td>
     </tr>
   </table>
 
-  {% if cable %}
-  <h2>۴. مشخصات کابل (Cable Specs)</h2>
+  <div class="container" style="margin-top: 20px;">
+
+    <div class="col-left">
+      <h3 style="font-size:14px; text-align:center;">شماتیک نصب</h3>
+      <div style="border:1px solid #ccc; padding:10px; text-align:center;">
+        <svg width="250" height="500" viewBox="0 0 300 600" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="50" width="300" height="550" fill="#eee" />
+            <line x1="0" y1="50" x2="300" y2="50" stroke="#555" stroke-width="4" />
+
+            <rect x="{{ schematic.casing_x }}" y="50" width="{{ schematic.casing_width }}" height="550" fill="#fff" stroke="#999" />
+            <rect x="{{ schematic.void_x }}" y="50" width="{{ schematic.void_width }}" height="550" fill="#333" />
+
+            <rect x="{{ schematic.void_x }}" y="{{ schematic.water_y }}" width="{{ schematic.void_width }}" height="{{ schematic.water_height }}" fill="#b3e5fc" />
+
+            <g transform="translate(0, {{ schematic.pump_y }})">
+                <rect x="145" y="-600" width="10" height="600" fill="#999" stroke="#555" /> <rect x="135" y="0" width="30" height="80" rx="4" fill="#555" /> <text x="175" y="40" font-size="14" fill="#000" font-weight="bold">Pump: {{ schematic.install_val }}m</text>
+                <line x1="165" y1="40" x2="173" y2="40" stroke="#000" />
+            </g>
+
+            <g transform="translate(0, {{ schematic.static_y }})">
+                <line x1="50" y1="0" x2="250" y2="0" stroke="blue" stroke-width="2" stroke-dasharray="5,3" />
+                <text x="40" y="-5" font-size="14" fill="blue" text-anchor="end">Static: {{ schematic.static_val }}m</text>
+            </g>
+
+            <g transform="translate(0, {{ schematic.dynamic_y }})">
+                <line x1="50" y1="0" x2="250" y2="0" stroke="red" stroke-width="2" stroke-dasharray="5,3" />
+                <text x="40" y="-5" font-size="14" fill="red" text-anchor="end">Dynamic: {{ schematic.dynamic_val }}m</text>
+            </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <h3 style="font-size:14px;">منحنی عملکرد (Generated)</h3>
+      <div style="text-align:center; border:1px solid #eee; padding:5px; margin-bottom: 20px;">
+        {% if curve_image %}
+            <img src="data:image/png;base64,{{ curve_image }}" style="width: 100%; max-height: 300px;">
+        {% else %}
+            <p>منحنی موجود نیست</p>
+        {% endif %}
+      </div>
+
+      <h3 style="font-size:14px;">مشخصات چاه</h3>
+      <table>
+        <tr><th>سطح استاتیک</th><td>{{ static_level }} متر</td></tr>
+        <tr><th>سطح دینامیک</th><td>{{ dynamic_level }} متر</td></tr>
+        <tr><th>عمق نصب</th><td>{{ install_depth }} متر</td></tr>
+        <tr><th>قطر چاه</th><td><span class="val-ltr">{{ diameter_inch }} inch</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  {% if cable.section != '---' %}
+  <h2>۲. محاسبات کابل برق</h2>
   <table>
     <tr>
+      <th>سطح مقطع انتخابی</th>
+      <td style="background:#e8f5e9; font-weight:bold;"><span class="val-ltr">3 x {{ cable.section }} mm²</span></td>
       <th>طول کابل</th>
       <td>{{ cable.length }} متر</td>
     </tr>
     <tr>
-      <th>نوع کابل</th>
-      <td>{{ 'تخت (Flat)' if cable.type == 'flat' else 'گرد (Round)' }}</td>
-    </tr>
-    <tr>
-      <th>سطح مقطع</th>
-      <td><span class="val-ltr">3 x {{ cable.section }} mm²</span></td>
+      <th>روش راه‌اندازی</th>
+      <td colspan="3">{{ 'دو ضرب (Star-Delta)' if cable.type == 'flat' else 'تک ضرب (Direct/Soft)' }}</td>
     </tr>
   </table>
   {% endif %}
 
   {% if segments %}
-  <h2>۵. جزئیات خط لوله (Piping)</h2>
+  <h2>۳. لیست اقلام لوله‌کشی</h2>
   <table>
-    <thead>
-      <tr style="background:#f1f1f1;">
-        <th>ردیف</th>
-        <th>جنس</th>
-        <th>سایز (mm)</th>
-        <th>طول (m)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for seg in segments %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ seg.material_name or '---' }}</td>
-        <td>{{ seg.diameter }}</td>
-        <td>{{ seg.length }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
+    <tr style="background:#f1f1f1;">
+      <th>ردیف</th><th>شرح</th><th>سایز</th><th>مقدار</th>
+    </tr>
+    {% for seg in segments %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ seg.material_name }}</td>
+      <td><span class="val-ltr">{{ seg.diameter_label }}</span></td>
+      <td><span class="val-ltr">{{ seg.length }}</span></td>
+    </tr>
+    {% endfor %}
   </table>
   {% endif %}
-
-  <div class="footer">
-    <p>این گزارش توسط نرم‌افزار هوشمند انتخاب پمپ پارس ناصری ایجاد شده است.</p>
-    <p>www.parspumpnaseri.com</p>
-  </div>
 
 </body>
 </html>
